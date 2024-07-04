@@ -1,6 +1,6 @@
 SELECT
   *
 FROM
-  synchronization_records
+  file_synchronization
 WHERE
   user_file_id = $1
