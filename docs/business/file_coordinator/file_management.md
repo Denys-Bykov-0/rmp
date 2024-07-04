@@ -157,7 +157,8 @@ routing-key: parsing/playlists/youtube
 body:
 {
     "playlist_id": "1",
-    "files": ["https://youtu.be/e2YRVZ4cmeo?si=hBUM-FE6ITmVNdJm"]
+    "files": ["https://youtu.be/e2YRVZ4cmeo?si=hBUM-FE6ITmVNdJm"],
+    "user_id": "1"
 }
 ``` 
 
@@ -226,6 +227,7 @@ Function parameters:
 ```
 playlist_id="1",
 url="someUrl",
+user_id="1"
 ``` 
 
 The server should:
