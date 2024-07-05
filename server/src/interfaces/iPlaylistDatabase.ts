@@ -11,8 +11,7 @@ export abstract class iPlaylistDatabase {
   public abstract getDefaultUserPlaylistId(userId: string): Promise<string>;
   public abstract getUserPlaylistFile(
     fileId: string,
-    userId: string,
-    playlistId: string
+    userId: string
   ): Promise<UserPlaylistFileDTO | null>;
   public abstract getPlaylistsByUserId(userId: string): Promise<PlaylistDTO[]>;
   public abstract getPlaylistsByPlaylistId(

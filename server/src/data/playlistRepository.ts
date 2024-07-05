@@ -51,14 +51,13 @@ class PlaylistRepository implements iPlaylistDatabase {
 
   public getUserPlaylistFile = async (
     fileId: string,
-    userId: string,
-    playlistId: string
+    userId: string
   ): Promise<UserPlaylistFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getUserPlaylistFile');
       dataLogger.debug(query);
-      const result = await client.query(query, [fileId, userId, playlistId]);
+      const result = await client.query(query, [fileId, userId]);
       if (result.rows.length === 0) {
         return null;
       }

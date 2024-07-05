@@ -72,8 +72,7 @@ export class FileWorker {
 
     const playlistFile = await this.playlistDb.getUserPlaylistFile(
       file!.id,
-      user.id,
-      userPlaylistId
+      user.id
     );
 
     if (playlistFile) {
@@ -166,44 +165,43 @@ export class FileWorker {
     user: User,
     deviceId: string
   ): Promise<void> => {
-    const existFile = await this.db.getUserFile(user.id, fileId);
-    const existSync = await this.db.getSyncrhonizationRecordsByDevice(
+    const existsingFile = await this.db.getUserFile(user.id, fileId);
+    const existsingSync = await this.db.getSyncrhonizationRecordsByDevice(
       deviceId,
-      existFile!.id
+      existsingFile!.id
     );
-    const existPlaylistFile = await this.playlistDb.getUserPlaylistFile(
+    const existingPlaylistFile = await this.playlistDb.getUserPlaylistFile(
       fileId,
-      user.id,
-      existFile!.id
+      user.id
     );
 
-    if (existPlaylistFile) {
+    if (existingPlaylistFile) {
       await this.db.updateSynchronizationRecords(
         new Date().toISOString(),
-        existFile!.id
+        existsingFile!.id
       );
       return;
     }
 
     await this.db.deleteSyncrhonizationRecordsByDevice(
-      existSync.deviceId,
-      existSync.userFileId
+      existsingSync.deviceId,
+      existsingSync.userFileId
     );
 
     const existSyncByUserFile =
-      await this.db.getSyncrhonizationRecordsByUserFile(existFile!.id);
+      await this.db.getSyncrhonizationRecordsByUserFile(existsingFile!.id);
 
     if (existSyncByUserFile.isSynchronized) {
       return;
     }
 
-    await this.db.deleteUserFile(user.id, existFile!.id);
-    const userFiles = await this.db.getUserFilesByFileId(existFile!.id);
+    await this.db.deleteUserFile(existsingFile!.id);
+    const userFiles = await this.db.getUserFilesByFileId(existsingFile!.id);
     if (userFiles.length) {
       return;
     }
     userFiles.forEach(async (userFile) => {
-      await this.db.deleteUserFile(userFile.userId, userFile.fileId);
+      await this.db.deleteUserFile(userFile.fileId);
       const file = await this.db.getFile(userFile.fileId);
       await fs.unlink(file!.path);
       await this.db.deleteFileById(userFile.fileId);
