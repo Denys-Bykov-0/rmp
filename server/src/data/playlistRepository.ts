@@ -259,24 +259,6 @@ class PlaylistRepository implements iPlaylistDatabase {
       client.release();
     }
   };
-
-  public getUserPlaylistsByFile = async (
-    fileId: string,
-    userId: string
-  ): Promise<Array<string>> => {
-    const client = await this.dbPool.connect();
-    try {
-      const query = this.sqlManager.getQuery('getUserPlaylistsByFile');
-      dataLogger.debug(query);
-      const result = await client.query(query, [fileId, userId]);
-      return result.rows.map((row) => row.playlist_id);
-    } catch (err) {
-      dataLogger.error(err);
-      throw err;
-    } finally {
-      client.release();
-    }
-  };
 }
 
 export { PlaylistRepository };

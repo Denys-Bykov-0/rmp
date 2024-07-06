@@ -48,8 +48,4 @@ export abstract class iPlaylistDatabase {
     userId: string,
     playlistId: string
   ): Promise<void>;
-  public abstract getUserPlaylistsByFile: (
-    fileId: string,
-    userId: string
-  ) => Promise<Array<string>>;
 }

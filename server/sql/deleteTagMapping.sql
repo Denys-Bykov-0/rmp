@@ -1,4 +1,3 @@
 DELETE FROM tag_mappings
 WHERE
-  user_id = $1
-  AND file_id = $2
+  file_id = $1

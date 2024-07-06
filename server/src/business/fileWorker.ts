@@ -1,5 +1,4 @@
 import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
 
 import { ProcessingError } from '@src/business/processingError';
 import { FileDTO } from '@src/dtos/fileDTO';
@@ -12,6 +11,7 @@ import { GetFileResponse } from '@src/entities/getFileResponse';
 import { User } from '@src/entities/user';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { iFilePlugin } from '@src/interfaces/iFilePlugin';
+import { FileType, iFileSystem } from '@src/interfaces/iFileSystem';
 import { iFileTagger } from '@src/interfaces/iFileTagger';
 import { iPlaylistDatabase } from '@src/interfaces/iPlaylistDatabase';
 import { iSourceDatabase } from '@src/interfaces/iSourceDatabase';
@@ -19,12 +19,14 @@ import { iTagDatabase } from '@src/interfaces/iTagDatabase';
 import { iTagPlugin } from '@src/interfaces/iTagPlugin';
 import { TagMappingMapper } from '@src/mappers/tagMappingMapper';
 import { TaggedFileMapper } from '@src/mappers/taggedFileMapper';
+import { dataLogger } from '@src/utils/server/logger';
 
 export class FileWorker {
   private db: iFileDatabase;
   private sourceDb: iSourceDatabase;
   private tagDb: iTagDatabase;
   private playlistDb: iPlaylistDatabase;
+  private fileSystem: iFileSystem;
   private filePlugin: iFilePlugin;
   private tagPlugin: iTagPlugin;
   private fileTagger: iFileTagger;
@@ -34,6 +36,7 @@ export class FileWorker {
     sourceDb: iSourceDatabase,
     tagDb: iTagDatabase,
     playlistDb: iPlaylistDatabase,
+    fileSystem: iFileSystem,
     filePlugin: iFilePlugin,
     tagPlugin: iTagPlugin,
     fileTagger: iFileTagger
@@ -42,6 +45,7 @@ export class FileWorker {
     this.sourceDb = sourceDb;
     this.tagDb = tagDb;
     this.playlistDb = playlistDb;
+    this.fileSystem = fileSystem;
     this.filePlugin = filePlugin;
     this.tagPlugin = tagPlugin;
     this.fileTagger = fileTagger;
@@ -198,7 +202,7 @@ export class FileWorker {
       return;
     }
 
-    await this.db.deleteUserFile(user.id, userFile!.id);
+    await this.db.deleteUserFile(userFile!.id);
     const userFiles = await this.db.getUserFilesByFileId(fileId);
 
     if (userFiles.length) {
@@ -206,25 +210,23 @@ export class FileWorker {
     }
 
     const file = await this.db.getFile(fileId);
-    await this.db.deleteUserFile(user.id, fileId);
-    const userPlaylistsByFile = await this.playlistDb.getUserPlaylistsByFile(
-      fileId,
-      user.id
-    );
-    if (userPlaylistsByFile.length > 0) {
-      await this.playlistDb.deleteUserPlaylistsFile(
-        fileId,
-        user.id,
-        userPlaylistsByFile
-      );
-    }
-    await this.tagDb.deleteTagMapping(user.id, fileId);
-    await this.tagDb.deleteTag(fileId);
+    const tags = await this.tagDb.getFileTags(fileId);
+    tags.forEach(async (tag) => {
+      await this.tagDb.deleteTag(tag.id);
+      if (tag.picturePath) {
+        try {
+          await this.fileSystem.removeFile(tag.picturePath, FileType.IMG);
+        } catch (err) {
+          dataLogger.debug(err);
+        }
+      }
+    });
+    await this.tagDb.deleteTagMapping(fileId);
     await this.db.deleteFileById(fileId);
     try {
-      await fs.unlink(file!.path);
+      await this.fileSystem.removeFile(file!.path, FileType.MUSIC);
     } catch (err) {
-      throw new ProcessingError('File not found on file system');
+      dataLogger.debug(err);
     }
   };
 

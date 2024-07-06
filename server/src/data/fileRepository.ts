@@ -465,15 +465,12 @@ export class FileRepository implements iFileDatabase {
     }
   };
 
-  public deleteUserFile = async (
-    userId: string,
-    userFileId: string
-  ): Promise<void> => {
+  public deleteUserFile = async (userFileId: string): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('deleteUserFile');
       dataLogger.debug(query);
-      await client.query(query, [userId, userFileId]);
+      await client.query(query, [userFileId]);
     } catch (err) {
       throw new Error(`FilesRepository.deleteUserFile: ${err}`);
     } finally {

@@ -68,10 +68,7 @@ export abstract class iFileDatabase {
   public abstract getSyncrhonizationRecordsByUserFile(
     userFileId: string
   ): Promise<FileSynchronizationDTO | null>;
-  public abstract deleteUserFile: (
-    userId: string,
-    userFileId: string
-  ) => Promise<void>;
+  public abstract deleteUserFile: (userFileId: string) => Promise<void>;
   public abstract getUserFilesByFileId: (
     fileId: string
   ) => Promise<Array<UserFileDTO>>;

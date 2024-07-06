@@ -4,6 +4,7 @@ import pg from 'pg';
 import { FileWorker } from '@src/business/fileWorker';
 import { ProcessingError } from '@src/business/processingError';
 import { FileRepository, SourceRepository, TagRepository } from '@src/data';
+import { FileSystemRepository } from '@src/data/fileSystemRepository';
 import { FileTagger } from '@src/data/fileTagger';
 import { PlaylistRepository } from '@src/data/playlistRepository';
 import { Config } from '@src/entities/config';
@@ -28,6 +29,7 @@ class FileController extends BaseController {
       new SourceRepository(this.dbPool, this.sqlManager),
       new TagRepository(this.dbPool, this.sqlManager),
       new PlaylistRepository(this.dbPool, this.sqlManager),
+      new FileSystemRepository(this.config),
       this.pluginManager!.getFilePlugin(),
       this.pluginManager!.getTagPlugin(),
       new FileTagger(this.config.appPathStorage)

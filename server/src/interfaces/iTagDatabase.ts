@@ -23,9 +23,6 @@ export abstract class iTagDatabase {
     userId: string
   ): Promise<ShortTagDTO>;
   public abstract updateTag(tag: TagDTO): Promise<TagDTO>;
-  public abstract deleteTagMapping(
-    userId: string,
-    fileId: string
-  ): Promise<void>;
+  public abstract deleteTagMapping(fileId: string): Promise<void>;
   public abstract deleteTag(id: string): Promise<void>;
 }
