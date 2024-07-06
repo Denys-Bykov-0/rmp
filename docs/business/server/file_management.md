@@ -384,7 +384,7 @@ Find a [file_synchronization](../../database/files/file_synchronization.md) reco
 device_id = request.url.deviceId  
 user_file_id = <b>user_file</b>.id  
 
-### AC 1.3
+#### AC 1.3
 
 Find records in the [user_playlist_files](../../database/files/user_playlist_files.md) where:  
 file_id = request.url.id    
@@ -397,7 +397,7 @@ Are any records found?
 #### AC 2
 
 Update the [file_synchronization](../../database/files/file_synchronization.md) table with:  
-is_synchronized = TRUE  
+is_synchronized = FALSE  
 was_changed = FALSE  
 device_ts = current timestamp  
 where:  
