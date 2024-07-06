@@ -397,7 +397,7 @@ Are any records found?
 #### AC 2
 
 Update the [file_synchronization](../../database/files/file_synchronization.md) table with:  
-is_synchronized = FALSE  
+is_synchronized = TRUE  
 was_changed = FALSE  
 device_ts = current timestamp  
 where:  
