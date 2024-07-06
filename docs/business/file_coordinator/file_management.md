@@ -217,7 +217,7 @@ server_ts = NOW()
 where:  
 user_file_id =     
 &emsp; id from [user_files](../../database/files/user_files.md) where:  
-&emsp; file_id = <b>removed_files</b>.file.id 
+&emsp; file_id = <b>removed_files</b>.file.id  
 &emsp; user_id = <b>up_recorcd</b>.user_id  
 
 # File downloading  
