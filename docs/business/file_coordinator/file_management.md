@@ -243,29 +243,16 @@ source_url = normalizedUrl
 
 Does the record exist?
 - yes - go to AC 3
-- no - go to AC 4
+- no - go to AC 7
 
 #### AC 3
-
-Try to find a record in the [user_paylist_files](../../database/files/user_playlist_files.md) using following filter:  
-file_id = <b>file</b>.id  
-user_playlist_id =   
-&emsp; id from [user_playlists](../../database/files/user_playlists.md) where:  
-&emsp; user_id = request.body.user_id  
-&emsp; playlist_id = parameters.playlist_id  
-
-Does the record exist?
-- yes - abort with "File alreay exists"
-- no - go to AC 8
-
-#### AC 4
 
 Insert a new record in the [files](../../database/files/files.md) table with the following values:  
 path = null  
 source_url = normalizedUrl  
 status = "CR"  
 
-#### AC 5
+#### AC 4
 
 Request file downloading.  
 Value mapping for the request:  
@@ -273,7 +260,7 @@ file_id = created_file.id
 url = normalizedUrl  
 uuid = created_file.uuid  
 
-#### AC 6
+#### AC 5
 
 Create a native tag record in the [tags](../../database/tags/tags.md) table with the following values:  
 file_id = created_file.id   
@@ -281,27 +268,34 @@ source = sourceId
 status = "CR"  
 is_primary = true
 
-#### AC 7
+#### AC 6
 
 Request native tag parsing.  
 Value mapping for the request:  
 tag_id = created_tag.id  
 url = normalizedUrl  
 
+#### AC 7
+
+Find records in the [user_playlists](../../database/files/user_playlists.md) table where:  
+playlist_id = <b>file</b>.id  
+
+For each <b>up_record</b> do AC 8   
+
 #### AC 8
 
-Insert a new record in the [user_paylist_files](../../database/files/user_playlist_files.md) table with the following values:  
+If the record does not exist, insert a it in the [user_paylist_files](../../database/files/user_playlist_files.md) table with the following values:  
 file_id = <b>file</b>.id  
-user_playlist_id =   
+user_playlist_id =  
 &emsp; id from [user_playlists](../../database/files/user_playlists.md) where:  
-&emsp; user_id = request.body.user_id  
+&emsp; user_id = <b>up_record</b>.user_id  
 &emsp; playlist_id = parameters.playlist_id  
 missing_from_remote = FALSE  
 
 #### AC 9.1
 
 Read a record from the [user_files](../../database/files/user_files.md) table using following filter:  
-user_id = request.user.id  
+user_id = <b>up_record</b>.user_id  
 file_id = <b>file</b>.id  
 
 Record exists?
@@ -312,20 +306,20 @@ Record exists?
 #### AC 9.2
 
 Create a record in the [user_files](../../database/files/user_files.md) table with the following values:  
-user_id = request.user.id  
+user_id = <b>up_record</b>.user_id  
 file_id = <b>file</b>.id  
 
 #### AC 10
 
 Create a record in the [tag_mappings](../../database/tags/tag_mappings.md) table with the following values:  
-user_id = request.user.id  
+user_id = <b>up_record</b>.user_id  
 file_id = (created_file / found_file).id  
 all tags = sourceId  
 
 ### AC 11
 
 For each record in the [devices](../../database/users/devices.md) table fulfilling following filter:  
-user_id = request.user.id  
+user_id = <b>up_record</b>.user_id  
   
 Create a record in the [file_synchronization](../../database/files/file_synchronization.md) table with the following values:  
 device_id = record.id  
