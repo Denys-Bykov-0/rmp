@@ -199,7 +199,7 @@ class FileController extends BaseController {
       await fileWorker.deleteFile(
         fileId,
         user.id,
-        playlistIds as Array<string>
+        playlistIds!.toString().split(',')
       );
       return response.status(200).json();
     } catch (error) {

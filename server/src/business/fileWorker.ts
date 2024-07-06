@@ -165,47 +165,67 @@ export class FileWorker {
     user: User,
     deviceId: string
   ): Promise<void> => {
-    const existsingFile = await this.db.getUserFile(user.id, fileId);
-    const existsingSync = await this.db.getSyncrhonizationRecordsByDevice(
+    const userFile = await this.db.getUserFile(user.id, fileId);
+    const fileSyncByDevice = await this.db.getSyncrhonizationRecordsByDevice(
       deviceId,
-      existsingFile!.id
+      userFile!.id
     );
-    const existingPlaylistFile = await this.playlistDb.getUserPlaylistFile(
+    const userPlaylistFiles = await this.playlistDb.getUserPlaylistFile(
       fileId,
       user.id
     );
 
-    if (existingPlaylistFile) {
+    if (userPlaylistFiles) {
       await this.db.updateSynchronizationRecords(
         new Date().toISOString(),
-        existsingFile!.id
+        userFile!.id,
+        true,
+        false
       );
       return;
     }
 
     await this.db.deleteSyncrhonizationRecordsByDevice(
-      existsingSync.deviceId,
-      existsingSync.userFileId
+      fileSyncByDevice.deviceId,
+      fileSyncByDevice.userFileId
     );
 
-    const existSyncByUserFile =
-      await this.db.getSyncrhonizationRecordsByUserFile(existsingFile!.id);
+    const fileSyncByUser = await this.db.getSyncrhonizationRecordsByUserFile(
+      userFile!.id
+    );
 
-    if (existSyncByUserFile.isSynchronized) {
+    if (fileSyncByUser) {
       return;
     }
 
-    await this.db.deleteUserFile(existsingFile!.id);
-    const userFiles = await this.db.getUserFilesByFileId(existsingFile!.id);
+    await this.db.deleteUserFile(user.id, userFile!.id);
+    const userFiles = await this.db.getUserFilesByFileId(fileId);
+
     if (userFiles.length) {
       return;
     }
-    userFiles.forEach(async (userFile) => {
-      await this.db.deleteUserFile(userFile.fileId);
-      const file = await this.db.getFile(userFile.fileId);
+
+    const file = await this.db.getFile(fileId);
+    await this.db.deleteUserFile(user.id, fileId);
+    const userPlaylistsByFile = await this.playlistDb.getUserPlaylistsByFile(
+      fileId,
+      user.id
+    );
+    if (userPlaylistsByFile.length > 0) {
+      await this.playlistDb.deleteUserPlaylistsFile(
+        fileId,
+        user.id,
+        userPlaylistsByFile
+      );
+    }
+    await this.tagDb.deleteTagMapping(user.id, fileId);
+    await this.tagDb.deleteTag(fileId);
+    await this.db.deleteFileById(fileId);
+    try {
       await fs.unlink(file!.path);
-      await this.db.deleteFileById(userFile.fileId);
-    });
+    } catch (err) {
+      throw new ProcessingError('File not found on file system');
+    }
   };
 
   public tagFile = async (
@@ -230,14 +250,16 @@ export class FileWorker {
     userId: string,
     playlistIds: Array<string>
   ): Promise<void> => {
-    const existFile = await this.db.getUserFile(userId, fileId);
-    if (!existFile) {
-      throw new ProcessingError('File not found');
+    const userFile = await this.db.getUserFile(userId, fileId);
+    if (!userFile) {
+      throw new ProcessingError('File does not exist');
     }
     await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
     await this.db.updateSynchronizationRecords(
       new Date().toISOString(),
-      existFile.id
+      userFile.id,
+      false,
+      true
     );
     return;
   };

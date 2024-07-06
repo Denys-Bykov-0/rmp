@@ -307,13 +307,32 @@ export class FileRepository implements iFileDatabase {
 
   public updateSynchronizationRecords = async (
     timestamp: string,
-    userFileId: string
+    userFileId: string,
+    isSynchronized: boolean,
+    wasChanged: boolean,
+    deviceId?: string
   ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.sqlManager.getQuery('updateSynchronizationRecords');
+      let query = this.sqlManager.getQuery('updateSynchronizationRecords');
+      if (deviceId) {
+        query += ' AND device_id = $5';
+        dataLogger.debug(query);
+        await client.query(query, [
+          timestamp,
+          userFileId,
+          isSynchronized,
+          wasChanged,
+          deviceId,
+        ]);
+      }
       dataLogger.debug(query);
-      await client.query(query, [timestamp, userFileId]);
+      await client.query(query, [
+        timestamp,
+        userFileId,
+        isSynchronized,
+        wasChanged,
+      ]);
     } catch (err) {
       throw new Error(`FilesRepository.updateSynchronizationRecords: ${err}`);
     } finally {
@@ -424,7 +443,7 @@ export class FileRepository implements iFileDatabase {
 
   public getSyncrhonizationRecordsByUserFile = async (
     userFileId: string
-  ): Promise<FileSynchronizationDTO> => {
+  ): Promise<FileSynchronizationDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery(
@@ -432,10 +451,11 @@ export class FileRepository implements iFileDatabase {
       );
       dataLogger.debug(query);
       const queryResult = await client.query(query, [userFileId]);
-      if (queryResult.rows.length === 0) {
-        throw new Error('Synchronization record not found');
+      const { rows } = queryResult;
+      if (rows.length === 0) {
+        return null;
       }
-      return FileSynchronizationDTO.fromJSON(queryResult.rows[0]);
+      return FileSynchronizationDTO.fromJSON(rows[0]);
     } catch (err) {
       throw new Error(
         `FilesRepository.getSyncrhonizationRecordsByUserFile: ${err}`
@@ -445,12 +465,15 @@ export class FileRepository implements iFileDatabase {
     }
   };
 
-  public deleteUserFile = async (userFileId: string): Promise<void> => {
+  public deleteUserFile = async (
+    userId: string,
+    userFileId: string
+  ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('deleteUserFile');
       dataLogger.debug(query);
-      await client.query(query, [userFileId]);
+      await client.query(query, [userId, userFileId]);
     } catch (err) {
       throw new Error(`FilesRepository.deleteUserFile: ${err}`);
     } finally {

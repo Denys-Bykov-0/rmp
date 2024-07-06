@@ -1,3 +1,4 @@
 DELETE FROM user_files
 WHERE
-  id = $2
+  user_id = $1
+  AND id = $2

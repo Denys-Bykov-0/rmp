@@ -210,4 +210,33 @@ export class TagRepository implements iTagDatabase {
       client.release();
     }
   };
+
+  public deleteTagMapping = async (
+    userId: string,
+    fileId: string
+  ): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deleteTagMapping');
+      await client.query(query, [userId, fileId]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public deleteTag = async (id: string): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deleteTag');
+      await client.query(query, [id]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
 }

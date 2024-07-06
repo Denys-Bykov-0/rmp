@@ -42,7 +42,10 @@ export abstract class iFileDatabase {
   ) => Promise<void>;
   public abstract updateSynchronizationRecords: (
     timestamp: string,
-    userFileId: string
+    userFileId: string,
+    isSynchronized: boolean,
+    wasChanged: boolean,
+    deviceId?: string
   ) => Promise<void>;
   public abstract getUserFiles: (
     userId: string,
@@ -64,8 +67,11 @@ export abstract class iFileDatabase {
   ): Promise<void>;
   public abstract getSyncrhonizationRecordsByUserFile(
     userFileId: string
-  ): Promise<FileSynchronizationDTO>;
-  public abstract deleteUserFile: (userFileId: string) => Promise<void>;
+  ): Promise<FileSynchronizationDTO | null>;
+  public abstract deleteUserFile: (
+    userId: string,
+    userFileId: string
+  ) => Promise<void>;
   public abstract getUserFilesByFileId: (
     fileId: string
   ) => Promise<Array<UserFileDTO>>;
