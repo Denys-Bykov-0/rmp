@@ -70,35 +70,19 @@ class TaggedFileDTO {
     this.playlists = playlists;
   }
 
-  public static fromJSONS = (jsons: JSON.JSONObject[]): TaggedFileDTO[] => {
-    const uniqueFiles = new Map<string, TaggedFileDTO>();
-
-    jsons.forEach((json) => {
-      const file = uniqueFiles.get(json.file_id);
-      const playlistDTO = PlaylistDTO.fromJSON(json);
-      const shortTagsDTO = ShortTagsDTO.fromJSON(json);
-
-      if (file) {
-        file.playlists = file.playlists
-          ? [...file.playlists, playlistDTO]
-          : [playlistDTO];
-      } else {
-        uniqueFiles.set(
-          json.file_id.toString(),
-          new TaggedFileDTO(
-            json.file_id.toString(),
-            SourceDTO.fromJSON(json),
-            json.file_status,
-            json.file_source_url,
-            json.is_synchronized,
-            shortTagsDTO.empty() ? null : shortTagsDTO,
-            [playlistDTO]
-          )
-        );
-      }
+  public static fromJSON = (json: JSON.JSONObject): TaggedFileDTO => {
+    const playlists = json.playlists.map((playlist: JSON.JSONObject) => {
+      return PlaylistDTO.fromJSON(playlist);
     });
-
-    return Array.from(uniqueFiles.values());
+    return new TaggedFileDTO(
+      json.file_id.toString(),
+      SourceDTO.fromJSON(json),
+      json.file_status,
+      json.file_source_url,
+      json.is_synchronized,
+      ShortTagsDTO.fromJSON(json),
+      playlists
+    );
   };
 }
 

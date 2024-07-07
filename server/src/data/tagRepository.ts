@@ -153,10 +153,8 @@ export class TagRepository implements iTagDatabase {
       const query = this.sqlManager.getQuery('getTagMapping');
       dataLogger.debug(query);
       const queryResult = await client.query(query, [userId, fileId]);
-      if (queryResult.rows.length > 0) {
-        return TagMappingDTO.fromJSON(queryResult.rows[0]);
-      }
-      return null;
+      const { rows } = queryResult;
+      return rows.length > 0 ? TagMappingDTO.fromJSON(rows[0]) : null;
     } catch (err) {
       dataLogger.error(err);
       throw err;

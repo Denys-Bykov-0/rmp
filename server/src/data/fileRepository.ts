@@ -41,18 +41,14 @@ export class FileRepository implements iFileDatabase {
   public getTaggedFileByUrl = async (
     url: string,
     user: UserDTO
-  ): Promise<TaggedFileDTO[] | null> => {
+  ): Promise<TaggedFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getTaggedFileByUrl');
       dataLogger.debug(query);
       const queryResult = await client.query(query, [url, user.id]);
-      if (queryResult.rows.length > 0) {
-        const result = TaggedFileDTO.fromJSONS(queryResult.rows);
-        return result;
-      } else {
-        return null;
-      }
+      const { rows } = queryResult;
+      return rows.length > 0 ? TaggedFileDTO.fromJSON(rows[0]) : null;
     } catch (err) {
       dataLogger.error(err);
       throw err;
@@ -130,12 +126,13 @@ export class FileRepository implements iFileDatabase {
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.extendGetTaggedFilesByUser(
+      let query = this.extendGetTaggedFilesByUser(
         this.sqlManager.getQuery('getTaggedFilesByUser'),
         statuses,
         synchronized,
         playlists
       );
+      query = this.extendGroupRequest(query);
 
       dataLogger.debug(query);
       const queryResult = await client.query(
@@ -148,13 +145,22 @@ export class FileRepository implements iFileDatabase {
           playlists
         )
       );
-      return TaggedFileDTO.fromJSONS(queryResult.rows);
+      const { rows } = queryResult;
+      return rows.map((row) => TaggedFileDTO.fromJSON(row));
     } catch (err) {
       dataLogger.error(err);
       throw err;
     } finally {
       client.release();
     }
+  };
+
+  public extendGroupRequest = (query: string): string => {
+    return `${query} GROUP BY f.id, s.id, s.description,
+            s.allow_for_secondary_tag_parsing, s.logo_path,
+            f.status, f.source_url, fs.is_synchronized,
+            tm.title, tm.artist, tm.album, tm.year,
+            tm.track_number, tm.picture`;
   };
 
   public insertFile = async (file: FileDTO): Promise<FileDTO> => {
@@ -237,16 +243,14 @@ export class FileRepository implements iFileDatabase {
     id: string,
     deviceId: string,
     userId: string
-  ): Promise<TaggedFileDTO[] | null> => {
+  ): Promise<TaggedFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getTaggedFile');
       dataLogger.debug(query);
       const queryResult = await client.query(query, [id, deviceId, userId]);
-      if (queryResult.rows.length === 0) {
-        return null;
-      }
-      return TaggedFileDTO.fromJSONS(queryResult.rows);
+      const { rows } = queryResult;
+      return rows.length > 0 ? TaggedFileDTO.fromJSON(rows[0]) : null;
     } catch (err) {
       throw new Error(`FilesRepository.getTaggedFile: ${err}`);
     } finally {

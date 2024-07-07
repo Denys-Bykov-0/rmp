@@ -9,7 +9,7 @@ export abstract class iFileDatabase {
   public abstract getTaggedFileByUrl: (
     url: string,
     user: UserDTO
-  ) => Promise<TaggedFileDTO[] | null>;
+  ) => Promise<TaggedFileDTO | null>;
   public abstract getTaggedFilesByUser: (
     user: UserDTO,
     deviceId: string,
@@ -26,7 +26,7 @@ export abstract class iFileDatabase {
     id: string,
     deviceId: string,
     userId: string
-  ) => Promise<TaggedFileDTO[] | null>;
+  ) => Promise<TaggedFileDTO | null>;
   public abstract doesFileExist(fileId: string): Promise<boolean>;
   public abstract getUserFile: (
     userId: string,

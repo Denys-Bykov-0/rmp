@@ -14,7 +14,7 @@ import { iTagPlugin } from '@src/interfaces/iTagPlugin';
 import { TagMapper } from '@src/mappers/tagMapper';
 import { dataLogger } from '@src/utils/server/logger';
 
-import { ProcessingError } from './processingError';
+import { ProcessingError, ProcessingErrorCode } from './processingError';
 
 export class TagWorker {
   private db: iTagDatabase;
@@ -38,7 +38,10 @@ export class TagWorker {
   public getFileTags = async (fileId: string): Promise<Array<Tag>> => {
     const doesFileExist = await this.fileDb.doesFileExist(fileId);
     if (!doesFileExist) {
-      throw new ProcessingError('File not found');
+      const opts = {
+        message: 'File not found',
+      };
+      throw new ProcessingError(opts);
     }
     const tags = await this.db.getFileTags(fileId);
     return tags.map((tag) => {
@@ -50,11 +53,17 @@ export class TagWorker {
     const tag = await this.db.getTag(tagId);
 
     if (!tag) {
-      throw new ProcessingError('Tag not found');
+      const opts = {
+        message: 'Tag not found',
+      };
+      throw new ProcessingError(opts);
     }
 
     if (!tag.picturePath) {
-      throw new ProcessingError('Tag has no picture');
+      const opts = {
+        message: 'Tag has no picture',
+      };
+      throw new ProcessingError(opts);
     }
 
     return tag.picturePath;
@@ -69,18 +78,27 @@ export class TagWorker {
     const primaryTag = await this.db.getPrimaryTag(fileId);
 
     if (!primaryTag) {
-      throw new ProcessingError('Primary tag not found');
+      const opts = {
+        message: 'Primary tag not found',
+      };
+      throw new ProcessingError(opts);
     }
 
     if (primaryTag.status !== 'C') {
-      throw new ProcessingError('Primary tag is not parsed');
+      const opts = {
+        message: 'Primary tag is not completed',
+      };
+      throw new ProcessingError(opts);
     }
 
     const sources = await this.sourceDb.getSourcesWithParsingPermission();
     await Promise.all(
       sources.map(async (source) => {
         if (await this.db.getTagByFile(fileId, source.id)) {
-          throw new ProcessingError('Parsing already requested');
+          const opts = {
+            message: 'Parsing already requested',
+          };
+          throw new ProcessingError(opts);
         }
         await this.db.insertTag(
           TagDTO.allFromOneSource('0', fileId, false, source.id, 'CR')
@@ -97,7 +115,11 @@ export class TagWorker {
   ): Promise<Tag> => {
     const userFileRecord = await this.fileDb.getUserFileRecord(fileId, userId);
     if (!userFileRecord) {
-      throw new ProcessingError('File not found');
+      const opts = {
+        message: 'File not found',
+        errorCode: ProcessingErrorCode.FILE_NOT_FOUND,
+      };
+      throw new ProcessingError(opts);
     }
     const customId = await this.sourceDb.getCustomSourceId();
     const existingTag = await this.db.getTagByFile(fileId, customId);
@@ -149,17 +171,27 @@ export class TagWorker {
       const filePath = path.join(picturePath, fileName);
       await fs.writeFile(filePath, bufferFile);
     } catch (error) {
-      throw new ProcessingError('File format not supported');
+      const opts = {
+        message: 'Failed to save picture',
+      };
+      throw new ProcessingError(opts);
     }
     const userFileRecord = await this.fileDb.getUserFileRecord(fileId, userId);
     if (!userFileRecord) {
-      throw new ProcessingError('File not found');
+      const opts = {
+        message: 'File not found',
+        errorCode: ProcessingErrorCode.FILE_NOT_FOUND,
+      };
+      throw new ProcessingError(opts);
     }
     const customId = await this.sourceDb.getCustomSourceId();
     const existingTag = await this.db.getTagByFile(fileId, customId);
 
     if (!existingTag) {
-      throw new ProcessingError('Tag not found');
+      const opts = {
+        message: 'Tag not found',
+      };
+      throw new ProcessingError(opts);
     }
 
     await this.db.updateTag(
