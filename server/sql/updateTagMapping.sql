@@ -6,9 +6,9 @@ SET
   picture = $4,
   year = $5,
   track_number = $6,
-  fixed = TRUE
+  fixed = $7
 WHERE
-  file_id = $7
+  file_id = $8
 RETURNING
   id as tag_mapping_id,
   user_id as tag_mapping_user_id,

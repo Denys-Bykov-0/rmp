@@ -45,9 +45,11 @@ export class TagMappingRepository implements iTagMappingDatabase {
         tagMapping.picture,
         tagMapping.year,
         tagMapping.trackNumber,
+        tagMapping.fixed,
         fileId,
       ]);
-      return TagMappingDTO.fromJSON(queryResult.rows[0]);
+      const { rows } = queryResult;
+      return TagMappingDTO.fromJSON(rows[0]);
     } catch (err) {
       dataLogger.error(err);
       throw err;

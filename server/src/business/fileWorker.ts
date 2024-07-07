@@ -216,12 +216,13 @@ export class FileWorker {
     );
 
     if (userPlaylistFiles) {
-      await this.db.updateSynchronizationRecords(
-        new Date().toISOString(),
-        userFile!.id,
-        true,
-        false
-      );
+      const opts = {
+        timestamp: new Date().toISOString(),
+        userFileId: userFile!.id,
+        isSynchronized: true,
+        wasChanged: false,
+      };
+      await this.db.updateSynchronizationRecords(opts);
       return;
     }
 
@@ -299,12 +300,13 @@ export class FileWorker {
       throw new ProcessingError(opts);
     }
     await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
-    await this.db.updateSynchronizationRecords(
-      new Date().toISOString(),
-      userFile.id,
-      false,
-      true
-    );
+    const opts = {
+      timestamp: new Date().toISOString(),
+      userFileId: userFile!.id,
+      isSynchronized: false,
+      wasChanged: true,
+    };
+    await this.db.updateSynchronizationRecords(opts);
     return;
   };
 }

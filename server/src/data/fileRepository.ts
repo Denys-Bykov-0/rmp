@@ -309,13 +309,19 @@ export class FileRepository implements iFileDatabase {
     }
   };
 
-  public updateSynchronizationRecords = async (
-    timestamp: string,
-    userFileId: string,
-    isSynchronized: boolean,
-    wasChanged: boolean,
-    deviceId?: string
-  ): Promise<void> => {
+  public updateSynchronizationRecords = async ({
+    timestamp,
+    userFileId,
+    isSynchronized,
+    wasChanged,
+    deviceId,
+  }: {
+    timestamp: string;
+    userFileId: string;
+    isSynchronized: boolean;
+    wasChanged: boolean;
+    deviceId?: string;
+  }): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       let query = this.sqlManager.getQuery('updateSynchronizationRecords');

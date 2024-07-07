@@ -42,6 +42,7 @@ class TagMappingWorker {
   ): Promise<TagMapping> => {
     try {
       const tagMappingDTO = new TagMappingMapper().toDTO(tagMapping);
+      tagMappingDTO.fixed = true;
       const updatedTagMappingDTO = await this.db.updateTagMapping(
         tagMappingDTO,
         fileId
@@ -52,12 +53,13 @@ class TagMappingWorker {
       );
 
       for (const userFileId of userFilesIds) {
-        await this.fileDb.updateSynchronizationRecords(
-          new Date().toISOString(),
-          userFileId,
-          false,
-          true
-        );
+        const opts = {
+          timestamp: new Date().toISOString(),
+          userFileId: userFileId,
+          isSynchronized: false,
+          wasChanged: true,
+        };
+        await this.fileDb.updateSynchronizationRecords(opts);
       }
 
       return new TagMappingMapper().toEntity(updatedTagMappingDTO);
