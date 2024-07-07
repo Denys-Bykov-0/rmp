@@ -96,7 +96,10 @@ export class UserWorker {
 
     const userFilesIds = await this.dbFile.getUserFileIds(user.id);
     for (const userFileId of userFilesIds) {
-      await this.dbFile.InserSyncrhonizationRecords(newDevice.id, userFileId);
+      await this.dbFile.inserSyncrhonizationRecordsByDevice(
+        newDevice.id,
+        userFileId
+      );
     }
   };
 
@@ -132,7 +135,10 @@ export class UserWorker {
 
     const userFilesIds = await this.dbFile.getUserFileIds(user.id);
     for (const userFileId of userFilesIds) {
-      await this.dbFile.InserSyncrhonizationRecords(newDevice.id, userFileId);
+      await this.dbFile.inserSyncrhonizationRecordsByDevice(
+        newDevice.id,
+        userFileId
+      );
     }
   };
 }

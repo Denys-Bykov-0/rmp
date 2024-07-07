@@ -1,3 +1,4 @@
+import { Playlist } from './playlists';
 import { Source } from './source';
 
 class ShortTags {
@@ -29,6 +30,7 @@ class File {
   public sourceUrl: string;
   public isSynchronized: boolean;
   public tags: ShortTags | null;
+  public playlists: Playlist[] | null;
 
   constructor(
     id: string,
@@ -36,7 +38,8 @@ class File {
     status: string,
     sourceUrl: string,
     isSynchronized: boolean,
-    tags: ShortTags | null
+    tags: ShortTags | null,
+    playlists: Playlist[] | null
   ) {
     this.id = id;
     this.source = source;
@@ -44,6 +47,7 @@ class File {
     this.sourceUrl = sourceUrl;
     this.isSynchronized = isSynchronized;
     this.tags = tags;
+    this.playlists = playlists;
   }
 }
 

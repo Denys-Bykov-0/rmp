@@ -82,6 +82,15 @@ export class FileRoute extends BaseRoute {
       controller.tagFile
     );
 
+    this.app.delete(
+      `${filesURI}/:fileId`,
+      auth0Middleware(this.config),
+      this.config.appDebug
+        ? userManagementMiddleware([GENERAL, DEBUG], userWorker, this.config)
+        : userManagementMiddleware([GENERAL], userWorker, this.config),
+      controller.deleteFile
+    );
+
     return this.app;
   }
 }

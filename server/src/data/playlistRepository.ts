@@ -51,18 +51,39 @@ class PlaylistRepository implements iPlaylistDatabase {
 
   public getUserPlaylistFile = async (
     fileId: string,
-    userId: string,
-    playlistId: string
+    userId: string
   ): Promise<UserPlaylistFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getUserPlaylistFile');
       dataLogger.debug(query);
-      const result = await client.query(query, [fileId, userId, playlistId]);
+      const result = await client.query(query, [fileId, userId]);
       if (result.rows.length === 0) {
         return null;
       }
       return UserPlaylistFileDTO.fromJSON(result.rows[0]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public getUserPlaylistFiles = async (
+    userId: string,
+    playlistId: string
+  ): Promise<UserPlaylistFileDTO[] | null> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('getUserPlaylistFiles');
+      dataLogger.debug(query);
+      const result = await client.query(query, [userId, playlistId]);
+      const { rows } = result;
+      if (rows.length === 0) {
+        return null;
+      }
+      return rows.map((row) => UserPlaylistFileDTO.fromJSON(row));
     } catch (err) {
       dataLogger.error(err);
       throw err;
@@ -182,6 +203,55 @@ class PlaylistRepository implements iPlaylistDatabase {
         new Date().toISOString(),
       ]);
       return UserPlaylistDTO.fromJSON(result.rows[0]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public deleteUserPlaylistsFile = async (
+    fileId: string,
+    userId: string,
+    playlistIds: Array<string>
+  ): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deleteUserPlaylistsFile');
+      dataLogger.debug(query);
+      await client.query(query, [fileId, userId, [playlistIds]]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public deletePlaylist = async (playlistId: string): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deletePlaylist');
+      dataLogger.debug(query);
+      await client.query(query, [playlistId]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public deleteUserPlaylist = async (
+    userId: string,
+    playlistId: string
+  ): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deleteUserPlaylist');
+      dataLogger.debug(query);
+      await client.query(query, [userId, playlistId]);
     } catch (err) {
       dataLogger.error(err);
       throw err;

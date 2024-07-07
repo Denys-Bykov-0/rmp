@@ -1,10 +1,10 @@
+import { Logger } from 'log4js';
+import pg from 'pg';
+import { SQLManager } from '@core/sqlManager';
 import { FileDTO } from '@dtos/fileDTO';
 import { TaggedFileDTO } from '@dtos/taggedFileDTO';
 import { UserDTO } from '@dtos/userDTO';
 import { FileDatabase } from '@interfaces/fileDatabase';
-import { Logger } from 'log4js';
-import pg from 'pg';
-import { SQLManager } from '@core/sqlManager';
 
 export class FileRepository implements FileDatabase {
   public dbPool: pg.Pool;
@@ -229,16 +229,20 @@ export class FileRepository implements FileDatabase {
     }
   };
 
-  public insertSynchronizationRecords = async (
+  public insertSynchronizationRecordsByUser = async (
     userId: string,
     userFileId: string,
   ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.sqlManager.getQuery('insertSynchronizationRecords');
+      const query = this.sqlManager.getQuery(
+        'insertSynchronizationRecordsByUser',
+      );
       await client.query(query, [userId, userFileId]);
     } catch (err) {
-      throw new Error(`FilesRepository.insertSynchronizationRecords: ${err}`);
+      throw new Error(
+        `FilesRepository.insertSynchronizationRecordsByUser: ${err}`,
+      );
     } finally {
       client.release();
     }
@@ -325,16 +329,20 @@ export class FileRepository implements FileDatabase {
     }
   };
 
-  public InserSyncrhonizationRecords = async (
+  public inserSyncrhonizationRecordsByDevice = async (
     deviceId: string,
     userFileId: string,
   ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.sqlManager.getQuery('InserSyncrhonizationRecords');
+      const query = this.sqlManager.getQuery(
+        'inserSyncrhonizationRecordsByDevice',
+      );
       await client.query(query, [deviceId, userFileId]);
     } catch (err) {
-      throw new Error(`FilesRepository.InserSyncrhonizationRecords: ${err}`);
+      throw new Error(
+        `FilesRepository.inserSyncrhonizationRecordsByDevice: ${err}`,
+      );
     } finally {
       client.release();
     }

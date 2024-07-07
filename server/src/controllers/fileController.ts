@@ -4,6 +4,7 @@ import pg from 'pg';
 import { FileWorker } from '@src/business/fileWorker';
 import { ProcessingError } from '@src/business/processingError';
 import { FileRepository, SourceRepository, TagRepository } from '@src/data';
+import { FileSystemRepository } from '@src/data/fileSystemRepository';
 import { FileTagger } from '@src/data/fileTagger';
 import { PlaylistRepository } from '@src/data/playlistRepository';
 import { Config } from '@src/entities/config';
@@ -28,6 +29,7 @@ class FileController extends BaseController {
       new SourceRepository(this.dbPool, this.sqlManager),
       new TagRepository(this.dbPool, this.sqlManager),
       new PlaylistRepository(this.dbPool, this.sqlManager),
+      new FileSystemRepository(this.config),
       this.pluginManager!.getFilePlugin(),
       this.pluginManager!.getTagPlugin(),
       new FileTagger(this.config.appPathStorage)
@@ -78,8 +80,15 @@ class FileController extends BaseController {
       {
         const { synchronized } = request.query;
         if (synchronized) {
-          synchronizedParam =
-            synchronized!.toString() === 'true' ? true : false;
+          synchronizedParam = JSON.parse(synchronized.toString());
+        }
+      }
+
+      let playlistsParam: Array<string> | null = null;
+      {
+        const { playlists } = request.query;
+        if (playlists) {
+          playlistsParam = playlists.toString().split(',');
         }
       }
 
@@ -89,7 +98,8 @@ class FileController extends BaseController {
         user,
         deviceIdParam,
         statusesParam,
-        synchronizedParam
+        synchronizedParam,
+        playlistsParam
       );
       return response.status(200).json(result);
     } catch (error) {
@@ -173,6 +183,27 @@ class FileController extends BaseController {
       });
 
       return response.end(result.data);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public deleteFile = async (
+    request: Express.Request,
+    response: Express.Response,
+    next: Express.NextFunction
+  ) => {
+    try {
+      const { user } = request.body;
+      const { playlistIds } = request.query;
+      const { fileId } = request.params;
+      const fileWorker = this.buildFileWorker();
+      await fileWorker.deleteFile(
+        fileId,
+        user.id,
+        playlistIds!.toString().split(',')
+      );
+      return response.status(200).json();
     } catch (error) {
       next(error);
     }

@@ -9,4 +9,3 @@ FROM
 WHERE
   upf.file_id = $1
   AND up.user_id = $2
-  AND up.playlist_id = $3;

@@ -1,3 +1,4 @@
+import { PlaylistDTO } from './playlistsDTO';
 import { SourceDTO } from './sourceDTO';
 
 class ShortTagsDTO {
@@ -49,6 +50,7 @@ class TaggedFileDTO {
   public sourceUrl: string;
   public isSynchronized: boolean;
   public tags: ShortTagsDTO | null;
+  public playlists: PlaylistDTO[] | null;
 
   constructor(
     id: string,
@@ -56,7 +58,8 @@ class TaggedFileDTO {
     status: string,
     sourceUrl: string,
     isSynchronized: boolean,
-    tags: ShortTagsDTO | null
+    tags: ShortTagsDTO | null,
+    playlists: PlaylistDTO[] | null
   ) {
     this.id = id;
     this.source = source;
@@ -64,18 +67,38 @@ class TaggedFileDTO {
     this.sourceUrl = sourceUrl;
     this.isSynchronized = isSynchronized;
     this.tags = tags;
+    this.playlists = playlists;
   }
 
-  public static fromJSON = (json: JSON.JSONObject): TaggedFileDTO => {
-    const shortTags = ShortTagsDTO.fromJSON(json);
-    return new TaggedFileDTO(
-      json.file_id.toString(),
-      SourceDTO.fromJSON(json),
-      json.file_status,
-      json.file_source_url,
-      json.is_synchronized,
-      shortTags.empty() ? null : shortTags
-    );
+  public static fromJSONS = (jsons: JSON.JSONObject[]): TaggedFileDTO[] => {
+    const uniqueFiles = new Map<string, TaggedFileDTO>();
+
+    jsons.forEach((json) => {
+      const file = uniqueFiles.get(json.file_id);
+      const playlistDTO = PlaylistDTO.fromJSON(json);
+      const shortTagsDTO = ShortTagsDTO.fromJSON(json);
+
+      if (file) {
+        file.playlists = file.playlists
+          ? [...file.playlists, playlistDTO]
+          : [playlistDTO];
+      } else {
+        uniqueFiles.set(
+          json.file_id.toString(),
+          new TaggedFileDTO(
+            json.file_id.toString(),
+            SourceDTO.fromJSON(json),
+            json.file_status,
+            json.file_source_url,
+            json.is_synchronized,
+            shortTagsDTO.empty() ? null : shortTagsDTO,
+            [playlistDTO]
+          )
+        );
+      }
+    });
+
+    return Array.from(uniqueFiles.values());
   };
 }
 

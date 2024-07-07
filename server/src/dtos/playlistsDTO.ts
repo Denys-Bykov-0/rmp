@@ -13,13 +13,13 @@ class PlaylistDTO {
 
   public static fromJSON(json: JSON.JSONObject): PlaylistDTO {
     return new PlaylistDTO(
-      json.id,
+      json.playlist_id,
       SourceDTO.fromJSON(json),
-      json.source_url,
-      json.added_ts,
-      json.status,
-      json.synchronization_ts,
-      json.title
+      json.playlist_source_url,
+      json.playlist_added_ts,
+      json.playlist_status,
+      json.playlist_synchronization_ts,
+      json.playlist_title
     );
   }
 }

@@ -11,6 +11,7 @@ import { GetFileResponse } from '@src/entities/getFileResponse';
 import { User } from '@src/entities/user';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { iFilePlugin } from '@src/interfaces/iFilePlugin';
+import { FileType, iFileSystem } from '@src/interfaces/iFileSystem';
 import { iFileTagger } from '@src/interfaces/iFileTagger';
 import { iPlaylistDatabase } from '@src/interfaces/iPlaylistDatabase';
 import { iSourceDatabase } from '@src/interfaces/iSourceDatabase';
@@ -18,12 +19,14 @@ import { iTagDatabase } from '@src/interfaces/iTagDatabase';
 import { iTagPlugin } from '@src/interfaces/iTagPlugin';
 import { TagMappingMapper } from '@src/mappers/tagMappingMapper';
 import { TaggedFileMapper } from '@src/mappers/taggedFileMapper';
+import { dataLogger } from '@src/utils/server/logger';
 
 export class FileWorker {
   private db: iFileDatabase;
   private sourceDb: iSourceDatabase;
   private tagDb: iTagDatabase;
   private playlistDb: iPlaylistDatabase;
+  private fileSystem: iFileSystem;
   private filePlugin: iFilePlugin;
   private tagPlugin: iTagPlugin;
   private fileTagger: iFileTagger;
@@ -33,6 +36,7 @@ export class FileWorker {
     sourceDb: iSourceDatabase,
     tagDb: iTagDatabase,
     playlistDb: iPlaylistDatabase,
+    fileSystem: iFileSystem,
     filePlugin: iFilePlugin,
     tagPlugin: iTagPlugin,
     fileTagger: iFileTagger
@@ -41,6 +45,7 @@ export class FileWorker {
     this.sourceDb = sourceDb;
     this.tagDb = tagDb;
     this.playlistDb = playlistDb;
+    this.fileSystem = fileSystem;
     this.filePlugin = filePlugin;
     this.tagPlugin = tagPlugin;
     this.fileTagger = fileTagger;
@@ -71,8 +76,7 @@ export class FileWorker {
 
     const playlistFile = await this.playlistDb.getUserPlaylistFile(
       file!.id,
-      user.id,
-      userPlaylistId
+      user.id
     );
 
     if (playlistFile) {
@@ -93,9 +97,9 @@ export class FileWorker {
     await this.tagDb.insertTagMapping(
       TagMappingDTO.allFromOneSource(user.id, file.id, sourceId)
     );
-    await this.db.insertSynchronizationRecords(user.id, userFileId);
+    await this.db.insertSynchronizationRecordsByUser(user.id, userFileId);
     const taggedFile = await this.db.getTaggedFileByUrl(file.sourceUrl, user);
-    return new TaggedFileMapper().toEntity(taggedFile!);
+    return new TaggedFileMapper().toEntity(taggedFile![0]);
   };
 
   public requestFileProcessing = async (
@@ -111,13 +115,15 @@ export class FileWorker {
     user: User,
     deviceId: string,
     statuses: Array<string> | null,
-    synchronized: boolean | null
+    synchronized: boolean | null,
+    playlists: Array<string> | null
   ): Promise<Array<File>> => {
     const userFiles = await this.db.getTaggedFilesByUser(
       user,
       deviceId,
       statuses,
-      synchronized
+      synchronized,
+      playlists
     );
 
     const files: Array<File> = userFiles.map((file) => {
@@ -142,7 +148,7 @@ export class FileWorker {
 
     for (const variation of expand) {
       if (variation === 'mapping') {
-        const mappingDTO = await this.tagDb.getTagMapping(user.id, file.id);
+        const mappingDTO = await this.tagDb.getTagMapping(user.id, file[0].id);
         if (!mappingDTO) {
           throw new ProcessingError('Mapping not found');
         }
@@ -152,15 +158,76 @@ export class FileWorker {
       }
     }
 
-    return new GetFileResponse(new TaggedFileMapper().toEntity(file), mapping);
+    return new GetFileResponse(
+      new TaggedFileMapper().toEntity(file[0]),
+      mapping
+    );
   };
 
   public confirmFile = async (
-    id: string,
+    fileId: string,
     user: User,
     deviceId: string
   ): Promise<void> => {
-    await this.db.confirmFile(id, user.id, deviceId);
+    const userFile = await this.db.getUserFile(user.id, fileId);
+    const fileSyncByDevice = await this.db.getSyncrhonizationRecordsByDevice(
+      deviceId,
+      userFile!.id
+    );
+    const userPlaylistFiles = await this.playlistDb.getUserPlaylistFile(
+      fileId,
+      user.id
+    );
+
+    if (userPlaylistFiles) {
+      await this.db.updateSynchronizationRecords(
+        new Date().toISOString(),
+        userFile!.id,
+        true,
+        false
+      );
+      return;
+    }
+
+    await this.db.deleteSyncrhonizationRecordsByDevice(
+      fileSyncByDevice.deviceId,
+      fileSyncByDevice.userFileId
+    );
+
+    const fileSyncByUser = await this.db.getSyncrhonizationRecordsByUserFile(
+      userFile!.id
+    );
+
+    if (fileSyncByUser) {
+      return;
+    }
+
+    await this.db.deleteUserFile(userFile!.id);
+    const userFiles = await this.db.getUserFilesByFileId(fileId);
+
+    if (userFiles.length) {
+      return;
+    }
+
+    const file = await this.db.getFile(fileId);
+    const tags = await this.tagDb.getFileTags(fileId);
+    tags.forEach(async (tag) => {
+      await this.tagDb.deleteTag(tag.id);
+      if (tag.picturePath) {
+        try {
+          await this.fileSystem.removeFile(tag.picturePath, FileType.IMG);
+        } catch (err) {
+          dataLogger.debug(err);
+        }
+      }
+    });
+    await this.tagDb.deleteTagMapping(fileId);
+    await this.db.deleteFileById(fileId);
+    try {
+      await this.fileSystem.removeFile(file!.path, FileType.MUSIC);
+    } catch (err) {
+      dataLogger.debug(err);
+    }
   };
 
   public tagFile = async (
@@ -178,5 +245,24 @@ export class FileWorker {
     const data = await this.fileTagger.tagFile(file!.path, tag);
 
     return new FileData(`${file!.path}.mp3`, data);
+  };
+
+  public deleteFile = async (
+    fileId: string,
+    userId: string,
+    playlistIds: Array<string>
+  ): Promise<void> => {
+    const userFile = await this.db.getUserFile(userId, fileId);
+    if (!userFile) {
+      throw new ProcessingError('File does not exist');
+    }
+    await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
+    await this.db.updateSynchronizationRecords(
+      new Date().toISOString(),
+      userFile.id,
+      false,
+      true
+    );
+    return;
   };
 }

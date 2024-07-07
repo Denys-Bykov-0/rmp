@@ -52,7 +52,14 @@ SELECT
       t.file_id = f.id
       AND t.source = tm.track_number
   ) as tag_track_number,
-  tm.picture as tag_picture
+  tm.picture as tag_picture,
+  p.id as playlist_id,
+  p.source_url as playlist_source_url,
+  p.source_id as playlist_source,
+  p.added_ts as playlist_added_ts,
+  p.status as playlist_status,
+  p.synchronization_ts as playlist_synchronization_ts,
+  p.title as playlist_title
 FROM
   files as f
   JOIN sources as s ON f.source = s.id
@@ -60,6 +67,8 @@ FROM
   AND tm.user_id = $1
   INNER JOIN user_files as uf ON f.id = uf.file_id
   LEFT JOIN file_synchronization as fs ON fs.user_file_id = uf.id
+  JOIN user_playlists as up ON uf.user_id = $1
+  JOIN playlists as p ON up.playlist_id = p.id
   AND fs.device_id = $2
 WHERE
   uf.user_id = $1

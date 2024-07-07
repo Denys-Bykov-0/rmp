@@ -219,7 +219,7 @@ paths:
           schema:
             type: array
             format: string
-        - name: syncronized
+        - name: synchronized
           in: query
           required: false
           description: Required synchronization status
@@ -306,6 +306,14 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: playlistIds
+          in: query
+          required: true
+          description: CSV list of the playlists to remove file from
+          example: '1,2'
+          schema:
+            type: array
+            format: string
       responses:
         '200':
           description: successful operation

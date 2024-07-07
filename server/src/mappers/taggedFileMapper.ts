@@ -2,6 +2,7 @@ import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
 import { File } from '@src/entities/file';
 
 import { DataMapper } from '.';
+import { PlaylistMapper } from './playlistMapper';
 import { ShortTagsMapper } from './shortTagsMapper';
 import { SourceMapper } from './sourceMapper';
 
@@ -13,7 +14,12 @@ class TaggedFileMapper implements DataMapper<TaggedFileDTO, File> {
       data.status,
       data.sourceUrl,
       data.isSynchronized,
-      data.tags ? new ShortTagsMapper().toEntity(data.tags) : null
+      data.tags ? new ShortTagsMapper().toEntity(data.tags) : null,
+      data.playlists
+        ? data.playlists!.map((playlist) =>
+            new PlaylistMapper().toEntity(playlist)
+          )
+        : null
     );
   };
 }

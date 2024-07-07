@@ -48,7 +48,9 @@ class TagMappingWorker {
       for (const userFileId of userFilesIds) {
         await this.fileDb.updateSynchronizationRecords(
           new Date().toISOString(),
-          userFileId
+          userFileId,
+          false,
+          true
         );
       }
 

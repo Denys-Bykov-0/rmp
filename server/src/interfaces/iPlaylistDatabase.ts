@@ -11,9 +11,12 @@ export abstract class iPlaylistDatabase {
   public abstract getDefaultUserPlaylistId(userId: string): Promise<string>;
   public abstract getUserPlaylistFile(
     fileId: string,
+    userId: string
+  ): Promise<UserPlaylistFileDTO | null>;
+  public abstract getUserPlaylistFiles(
     userId: string,
     playlistId: string
-  ): Promise<UserPlaylistFileDTO | null>;
+  ): Promise<UserPlaylistFileDTO[] | null>;
   public abstract getPlaylistsByUserId(userId: string): Promise<PlaylistDTO[]>;
   public abstract getPlaylistsByPlaylistId(
     userId: string,
@@ -35,4 +38,14 @@ export abstract class iPlaylistDatabase {
     userId: string,
     playlistId: string
   ): Promise<UserPlaylistDTO>;
+  public abstract deleteUserPlaylistsFile(
+    fileId: string,
+    userId: string,
+    playlistIds: Array<string>
+  ): Promise<void>;
+  public abstract deletePlaylist(playlistId: string): Promise<void>;
+  public abstract deleteUserPlaylist(
+    userId: string,
+    playlistId: string
+  ): Promise<void>;
 }

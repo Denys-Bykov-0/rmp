@@ -29,11 +29,11 @@ export abstract class FileDatabase {
     userId: string,
     fileId: string,
   ) => Promise<boolean>;
-  public abstract insertSynchronizationRecords: (
+  public abstract insertSynchronizationRecordsByUser: (
     userId: string,
     userFileId: string,
   ) => Promise<void>;
-  public abstract InserSyncrhonizationRecords: (
+  public abstract inserSyncrhonizationRecordsByDevice: (
     deviceId: string,
     userFileId: string,
   ) => Promise<void>;
