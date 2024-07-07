@@ -1,3 +1,8 @@
+import fs from 'fs/promises';
+import path from 'path';
+import sharp from 'sharp';
+import { v4 as randomUUIDV4 } from 'uuid';
+
 import { Status } from '@src/dtos/statusDTO';
 import { TagDTO } from '@src/dtos/tagDTO';
 import { ShortTags } from '@src/entities/file';
@@ -133,10 +138,19 @@ export class TagWorker {
   };
 
   public addCustomTagPicture = async (
+    bufferFile: Buffer,
     fileId: string,
     userId: string,
     picturePath: string
   ): Promise<void> => {
+    try {
+      const { format } = await sharp(bufferFile).metadata();
+      const fileName = `${randomUUIDV4()}.${format}`;
+      const filePath = path.join(picturePath, fileName);
+      await fs.writeFile(filePath, bufferFile);
+    } catch (error) {
+      throw new ProcessingError('File format not supported');
+    }
     const userFileRecord = await this.fileDb.getUserFileRecord(fileId, userId);
     if (!userFileRecord) {
       throw new ProcessingError('File not found');

@@ -1,9 +1,6 @@
 import Express from 'express';
-import fs from 'fs/promises';
 import path from 'path';
 import pg from 'pg';
-import sharp from 'sharp';
-import { v4 as randomUUIDV4 } from 'uuid';
 
 import { TagWorker } from '@src/business/tagWorker';
 import { FileRepository, SourceRepository, TagRepository } from '@src/data';
@@ -123,22 +120,20 @@ class TagController extends BaseController {
       });
 
       request.on('end', async () => {
-        const buffer = Buffer.concat(data);
-        const { format } = await sharp(buffer).metadata();
-        if (!format) {
-          throw new Error('File format not supported');
+        const bufferFile = Buffer.concat(data);
+
+        const filePath = path.join(this.config.appPathStorage, 'img');
+        try {
+          const result = await tagWorker.addCustomTagPicture(
+            bufferFile,
+            fileId,
+            userId,
+            filePath
+          );
+          return response.status(200).json(result);
+        } catch (error) {
+          next(error);
         }
-        const fileName = `${randomUUIDV4()}.${format}`;
-        const filePath = path.join(this.config.appPathStorage, 'img', fileName);
-        await fs.writeFile(filePath, buffer);
-
-        const result = await tagWorker.addCustomTagPicture(
-          fileId,
-          userId,
-          filePath
-        );
-
-        return response.status(200).json(result);
       });
 
       request.on('error', (error) => {
