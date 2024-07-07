@@ -13,7 +13,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.title
+      t.source = tm.title
+      and t.file_id = f.id
   ) as tag_title,
   (
     SELECT
@@ -21,7 +22,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.artist
+      t.source = tm.artist
+      and t.file_id = f.id
   ) as tag_artist,
   (
     SELECT
@@ -29,7 +31,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.album
+      t.source = tm.album
+      and t.file_id = f.id
   ) as tag_album,
   (
     SELECT
@@ -37,7 +40,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.year
+      t.source = tm.year
+      and t.file_id = f.id
   ) as tag_year,
   (
     SELECT
@@ -45,7 +49,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.track_number
+      t.source = tm.track_number
+      and t.file_id = f.id
   ) as tag_track_number,
   tm.picture as tag_picture,
   ARRAY_AGG(
