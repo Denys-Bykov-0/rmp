@@ -211,41 +211,48 @@ class FileCoordinatorWorker {
         TagDTO.allFromOneSource('0', file.id, true, sourceId, Status.Created),
       );
       await this.requestFileProcessing(file);
-    }
 
-    const userPlaylists =
-      await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
+      const userPlaylists =
+        await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
 
-    userPlaylists!.forEach(async (userPlaylist) => {
-      const userPlaylistFile = await this.playlistDb.getUserPlaylistFile(
-        file!.id,
-        userPlaylist.userId,
-        playlistId,
-      );
-      if (!userPlaylistFile) {
-        await this.playlistDb.insertUserPlaylistFile({
-          fileId: file!.id,
-          playlistId: playlistId,
-          missingFromRemote: true,
-        });
-      }
-      const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
-      if (!userFile) {
-        await this.db.insertUserFile(userPlaylist.userId, file!.id);
-      }
-      await this.tagDb.insertTagMapping(
-        TagMappingDTO.allFromOneSource(userPlaylist.userId, file!.id, sourceId),
-      );
-
-      const devices = await this.db.getDevicesIdByUser(userPlaylist.userId);
-
-      devices.forEach(async (deviceId) => {
-        await this.db.insertSynchronizationRecordsByDevice(
-          userFile!.id,
-          deviceId,
+      userPlaylists!.forEach(async (userPlaylist) => {
+        const userPlaylistFile = await this.playlistDb.getUserPlaylistFile(
+          file!.id,
+          userPlaylist.userId,
+          playlistId,
         );
+        if (!userPlaylistFile) {
+          await this.playlistDb.insertUserPlaylistFile({
+            fileId: file!.id,
+            playlistId: playlistId,
+            missingFromRemote: true,
+          });
+        }
+        const userFile = await this.db.getUserFile(
+          userPlaylist.userId,
+          file!.id,
+        );
+        if (!userFile) {
+          await this.db.insertUserFile(userPlaylist.userId, file!.id);
+        }
+        await this.tagDb.insertTagMapping(
+          TagMappingDTO.allFromOneSource(
+            userPlaylist.userId,
+            file!.id,
+            sourceId,
+          ),
+        );
+
+        const devices = await this.db.getDevicesIdByUser(userPlaylist.userId);
+
+        devices.forEach(async (deviceId) => {
+          await this.db.insertSynchronizationRecordsByDevice(
+            userFile!.id,
+            deviceId,
+          );
+        });
       });
-    });
+    }
   };
 
   public requestFileProcessing = async (file: FileDTO): Promise<void> => {
