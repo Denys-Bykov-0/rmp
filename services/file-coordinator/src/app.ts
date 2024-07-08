@@ -74,6 +74,11 @@ class App {
       'checking/file',
       fileController.handle_message,
     );
+    await amqpConsumer.consume(
+      this.amqpConfigConnection,
+      'parsing/playlists/youtube',
+      fileController.handle_message,
+    );
   };
 }
 

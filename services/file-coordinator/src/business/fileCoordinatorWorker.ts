@@ -216,7 +216,7 @@ class FileCoordinatorWorker {
     const userPlaylists =
       await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
 
-    userPlaylists.forEach(async (userPlaylist) => {
+    userPlaylists!.forEach(async (userPlaylist) => {
       const userPlaylistFile = await this.playlistDb.getUserPlaylistFile(
         file!.id,
         userPlaylist.userId,
@@ -252,6 +252,49 @@ class FileCoordinatorWorker {
     const source = await this.sourceDb.getSource(file.source);
     await this.filePlugin.downloadFile(file, source!.description);
     await this.tagPlugin.tagFile(file, source!.description);
+  };
+
+  public processPlaylist = async (
+    playlistId: string,
+    files: string[],
+  ): Promise<void> => {
+    const playlist = await this.playlistDb.getPlaylistByPlaylistId(playlistId);
+    if (!playlist) {
+      this.logger.error(`Playlist not found: ${playlistId}`);
+      throw new Error('Playlist not found');
+    }
+    const userPlaylist =
+      await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
+
+    if (!userPlaylist) {
+      this.logger.error(`User playlists not found: ${playlistId}`);
+      throw new Error('User playlists not found');
+    }
+    const taggedUserPlaylistFile =
+      await this.playlistDb.getUserPlaylistFilesAndFileByPlaylistId(playlistId);
+
+    const newFiles = files.filter(
+      (file) =>
+        !taggedUserPlaylistFile.some((upff) => upff.file.sourceUrl === file),
+    );
+
+    const removedFiles = taggedUserPlaylistFile.filter(
+      (upff) => !files.includes(upff.file.sourceUrl),
+    );
+
+    newFiles.forEach(async (file) => {
+      await this.downloadFile(playlistId, file);
+    });
+
+    removedFiles.forEach(async (upff) => {
+      await this.playlistDb.updateUserPlaylistFile(upff.file.id, false);
+      const opts = {
+        userFileId: upff.file.id,
+        isSynchronized: false,
+        wasChanged: true,
+      };
+      await this.db.updateFileSynchronization(opts);
+    });
   };
 }
 
