@@ -7,6 +7,7 @@ import { FileCoordinatorWorker } from '@business/fileCoordinatorWorker';
 import { FileCoordinatorRepository } from '@data/fileCoordinatorRepository';
 import { SourceRepository } from '@data/sourceRepository';
 import { TagRepository } from '@data/tagRepository';
+import { PlaylistRepository } from '@data/playlistRepository';
 
 class FileController {
   private controllerLogger: Logger;
@@ -39,6 +40,8 @@ class FileController {
       ),
       new TagRepository(this.dbPool, this.sqlManager, this.dataLogger),
       new SourceRepository(this.dbPool, this.sqlManager, this.dataLogger),
+      new PlaylistRepository(this.dbPool, this.sqlManager, this.dataLogger),
+      this.pluginManager!.getFilePlugin(),
       this.pluginManager!.getTagPlugin(),
       this.businessLogger,
     );

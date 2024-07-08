@@ -70,7 +70,7 @@ export class FileWorker {
       await this.tagDb.insertTag(
         TagDTO.allFromOneSource('0', file.id, true, sourceId, Status.Created)
       );
-      await this.requestFileProcessing(file!, user.id);
+      await this.requestFileProcessing(file);
     }
 
     const userPlaylistId = await this.playlistDb.getDefaultUserPlaylistId(
@@ -108,13 +108,10 @@ export class FileWorker {
     return new TaggedFileMapper().toEntity(taggedFile!);
   };
 
-  public requestFileProcessing = async (
-    file: FileDTO,
-    userId: string
-  ): Promise<void> => {
+  public requestFileProcessing = async (file: FileDTO): Promise<void> => {
     const source = await this.sourceDb.getSource(file.source);
     await this.filePlugin.downloadFile(file, source!.description);
-    await this.tagPlugin.tagFile(file, userId, source!.description);
+    await this.tagPlugin.tagFile(file, source!.description);
   };
 
   public getTaggedFilesByUser = async (

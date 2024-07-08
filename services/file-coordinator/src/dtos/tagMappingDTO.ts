@@ -20,7 +20,7 @@ class TagMappingDTO {
     picture: string,
     year: string,
     trackNumber: string,
-    fixed: boolean,
+    fixed: boolean = false,
   ) {
     this.id = id;
     this.userId = userId;
@@ -48,6 +48,24 @@ class TagMappingDTO {
       json.tag_mapping_fixed,
     );
   }
+
+  public static allFromOneSource = (
+    user_id: string,
+    file_id: string,
+    source: string,
+  ): TagMappingDTO => {
+    return new TagMappingDTO(
+      '0',
+      user_id,
+      file_id,
+      source,
+      source,
+      source,
+      source,
+      source,
+      source,
+    );
+  };
 }
 
 export { TagMappingDTO };

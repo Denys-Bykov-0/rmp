@@ -1,11 +1,12 @@
+import { Logger } from 'log4js';
+import pg from 'pg';
+import { SQLManager } from '@core/sqlManager';
 import { FileDTO } from '@dtos/fileDTO';
 import { TagDTO } from '@dtos/tagDTO';
 import { TagMappingDTO } from '@dtos/tagMappingDTO';
 import { TagMappingPriorityDTO } from '@dtos/tagMappingPriorityDTO';
+import { UserFileDTO } from '@dtos/userFileDTO';
 import { FileCoordinatorDatabase } from '@interfaces/fileCoordinatorDatabase';
-import { Logger } from 'log4js';
-import pg from 'pg';
-import { SQLManager } from '@core/sqlManager';
 
 class FileCoordinatorRepository implements FileCoordinatorDatabase {
   private dbPool: pg.Pool;
@@ -31,16 +32,22 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     }
   };
 
-  public updateFileSynchronization = async (
-    userFileId: string,
-    isSynchronized: boolean,
-  ): Promise<void> => {
+  public updateFileSynchronization = async ({
+    userFileId,
+    isSynchronized,
+    wasChanged,
+  }: {
+    userFileId: string;
+    isSynchronized: boolean;
+    wasChanged: boolean;
+  }): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('updateFileSynchronization');
       this.logger.debug(`Query: ${query}`);
       await client.query(query, [
         isSynchronized,
+        wasChanged,
         new Date().toISOString(),
         userFileId,
       ]);
@@ -52,9 +59,9 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     }
   };
 
-  public getTagMappings = async (
+  public getTagMapping = async (
     fileId: string,
-    fixed: boolean
+    fixed: boolean,
   ): Promise<TagMappingDTO[]> => {
     const client = await this.dbPool.connect();
     try {
@@ -159,7 +166,125 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     } finally {
       client.release();
     }
-  }
+  };
+
+  public getFileByUrl = async (url: string): Promise<FileDTO | null> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('getFileByUrl');
+      this.logger.debug(`Query: ${query}`);
+      const queryResult = await client.query(query, [url]);
+      const { rows } = queryResult;
+      return rows.length > 0 ? FileDTO.fromJSON(rows[0]) : null;
+    } catch (err) {
+      this.logger.error(`Error getting file by url: ${err}`);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public insertFile = async (file: FileDTO): Promise<FileDTO> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('insertFile');
+      this.logger.debug(`Query: ${query}`);
+      const queryResult = await client.query(query, [
+        file.path,
+        file.sourceUrl,
+        file.source,
+        file.status,
+      ]);
+      const { rows } = queryResult;
+      return FileDTO.fromJSON(rows[0]);
+    } catch (err) {
+      this.logger.error(`Error inserting file: ${err}`);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public getUserFile = async (
+    userId: string,
+    fileId: string,
+  ): Promise<UserFileDTO> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('getUserFile');
+      const { rows } = await client.query(query, [userId, fileId]);
+      return UserFileDTO.fromJSON(rows[0]);
+    } catch (error) {
+      this.logger.error(
+        `Error getting user file by user id and file id: ${error}`,
+      );
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
+
+  public insertUserFile = async (
+    userId: string,
+    fileId: string,
+  ): Promise<UserFileDTO> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = `INSERT INTO user_files (user_id, file_id)
+                     VALUES ($1, $2) RETURNING
+                     id AS user_file_id,
+                     file_id AS user_file_file_id,
+                     user_id AS user_file_user_id,
+                     added_ts AS user_file_added_ts`;
+      this.logger.debug(`Query: ${query}`);
+      const queryResult = await client.query(query, [userId, fileId]);
+      if (queryResult.rows.length === 0) {
+        throw new Error('Failed to insert user file');
+      }
+      return UserFileDTO.fromJSON(queryResult.rows[0]);
+    } catch (err) {
+      this.logger.error(`Error inserting user file: ${err}`);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public getDevicesIdByUser = async (userId: string): Promise<string[]> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('getDevicesIdByUser');
+      this.logger.debug(`Query: ${query}`);
+      const queryResult = await client.query(query, [userId]);
+      return queryResult.rows.map((row) => row.id);
+    } catch (error) {
+      this.logger.error(`Error getting devices id by user id: ${error}`);
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
+
+  public insertSynchronizationRecordsByDevice = async (
+    userFileId: string,
+    deviceId: string,
+  ): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery(
+        'insertSynchronizationRecordsByDevice',
+      );
+      this.logger.debug(`Query: ${query}`);
+      await client.query(query, [userFileId, deviceId]);
+    } catch (error) {
+      this.logger.error(
+        `Error inserting synchronization records by user: ${error}`,
+      );
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
 }
 
 export { FileCoordinatorRepository };
