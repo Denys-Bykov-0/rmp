@@ -1,5 +1,6 @@
 import { Status } from '@src/dtos/statusDTO';
 import { Playlist } from '@src/entities/playlists';
+import { iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { iFilePlugin } from '@src/interfaces/iFilePlugin';
 import { iPlaylistDatabase } from '@src/interfaces/iPlaylistDatabase';
 import { iPlaylistPlugin } from '@src/interfaces/iPlaylistPlugin';
@@ -11,6 +12,7 @@ import { ProcessingError } from './processingError';
 class PlaylistWorker {
   constructor(
     private readonly db: iPlaylistDatabase,
+    private readonly fileDb: iFileDatabase,
     private readonly sourceDb: iSourceDatabase,
     private readonly filePlugin: iFilePlugin,
     private readonly playlistPlugin: iPlaylistPlugin
@@ -68,6 +70,35 @@ class PlaylistWorker {
 
     const palylist = await this.db.getPlaylistsByPlaylistId(userId, result.id);
     return new PlaylistMapper().toEntity(palylist);
+  };
+
+  public deletePlaylist = async (
+    userId: string,
+    playlistId: string
+  ): Promise<void> => {
+    const userPlaylistByCurrentUser = await this.db.getUserPlaylistByUserId(
+      userId,
+      playlistId
+    );
+    const userPlaylistFiles = await this.db.getUserPlaylistFilesByPlaylistId(
+      userPlaylistByCurrentUser.id
+    );
+
+    userPlaylistFiles.forEach(async (file) => {
+      await this.db.deleteUserPlaylistsFile(file.id, userId, [playlistId]);
+      const opts = {
+        timestamp: new Date().toISOString(),
+        userFileId: file.fileId,
+        isSynchronized: false,
+        wasChanged: true,
+      };
+      await this.fileDb.updateSynchronizationRecords(opts);
+    });
+    await this.db.deleteUserPlaylist(userId, userPlaylistByCurrentUser.id);
+    const userPlaylist = await this.db.getUserPlaylistById(playlistId);
+    if (userPlaylist.length !== 0) {
+      await this.db.deletePlaylist(playlistId);
+    }
   };
 }
 

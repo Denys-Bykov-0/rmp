@@ -2,7 +2,7 @@ import Express from 'express';
 import pg from 'pg';
 
 import { PlaylistWorker } from '@src/business/playlistWorker';
-import { SourceRepository } from '@src/data';
+import { FileRepository, SourceRepository } from '@src/data';
 import { PlaylistRepository } from '@src/data/playlistRepository';
 import { Config } from '@src/entities/config';
 import { PluginManager } from '@src/pluginManager';
@@ -23,6 +23,7 @@ class PlaylistController extends BaseController {
   private buildPlaylistWorker = (): PlaylistWorker => {
     return new PlaylistWorker(
       new PlaylistRepository(this.dbPool, this.sqlManager),
+      new FileRepository(this.dbPool, this.sqlManager),
       new SourceRepository(this.dbPool, this.sqlManager),
       this.pluginManager!.getFilePlugin(),
       this.pluginManager!.getPlaylistPlugin()
@@ -72,6 +73,21 @@ class PlaylistController extends BaseController {
       const { user, url } = req.body;
       const playlistWorker = this.buildPlaylistWorker();
       const result = await playlistWorker.createPlaylist(user.id, url);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public deletePlaylist = async (
+    req: Express.Request,
+    res: Express.Response,
+    next: Express.NextFunction
+  ): Promise<void> => {
+    try {
+      const { user, playlistId } = req.body;
+      const playlistWorker = this.buildPlaylistWorker();
+      const result = await playlistWorker.deletePlaylist(user.id, playlistId);
       res.status(200).json(result);
     } catch (error) {
       next(error);

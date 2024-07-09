@@ -9,9 +9,9 @@ class UserPlaylistFileDTO {
   public static fromJSON(json: JSON.JSONObject): UserPlaylistFileDTO {
     return new UserPlaylistFileDTO(
       json.id,
-      json.fileId,
-      json.userPlaylistId,
-      json.missingFromRemote
+      json.file_id,
+      json.user_playlist_id,
+      json.missing_from_remote
     );
   }
 }
