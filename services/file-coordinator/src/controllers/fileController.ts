@@ -56,7 +56,7 @@ class FileController {
         const { file_id: fileId } = JSON.parse(message.content.toString());
         await this.validateArgs([fileId]);
         await this.coordinateFile(fileId);
-      } else if (queueName === 'parsing/playlists/youtube') {
+      } else if (queueName === 'playlist/update') {
         const { playlist_id: playlistId, files } = JSON.parse(
           message.content.toString(),
         );

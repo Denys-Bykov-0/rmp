@@ -4,6 +4,7 @@ import { FileDTO } from '@dtos/fileDTO';
 import { TagDTO } from '@dtos/tagDTO';
 import { TagMappingDTO } from '@dtos/tagMappingDTO';
 import { TagMappingPriorityDTO } from '@dtos/tagMappingPriorityDTO';
+import { UpdateFileSynchronizationDTO } from '@dtos/updateFileSynchronizationDTO';
 import { Status } from '@entities/status';
 import { FileCoordinatorDatabase } from '@interfaces/fileCoordinatorDatabase';
 import { FilePlugin } from '@interfaces/filePlugin';
@@ -87,13 +88,14 @@ class FileCoordinatorWorker {
         newTagMapping.userId!,
       );
 
-      const opts = {
+      const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+        timestamp: new Date().toISOString(),
         userFileId: userFileId,
         isSynchronized: false,
         wasChanged: true,
-      };
+      });
 
-      await this.db.updateFileSynchronization(opts);
+      await this.db.updateFileSynchronization(fileSynchronization);
     }
 
     if (file.status === Status.Downloaded) {
@@ -243,7 +245,7 @@ class FileCoordinatorWorker {
           ),
         );
 
-        const devices = await this.db.getDevicesIdByUser(userPlaylist.userId);
+        const devices = await this.db.getDeviceIdsByUser(userPlaylist.userId);
 
         devices.forEach(async (deviceId) => {
           await this.db.insertSynchronizationRecordsByDevice(
@@ -270,37 +272,43 @@ class FileCoordinatorWorker {
       this.logger.error(`Playlist not found: ${playlistId}`);
       throw new Error('Playlist not found');
     }
-    const userPlaylist =
+    const userPlaylists =
       await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
 
-    if (!userPlaylist) {
+    if (userPlaylists.length == 0) {
       this.logger.error(`User playlists not found: ${playlistId}`);
       throw new Error('User playlists not found');
     }
-    const taggedUserPlaylistFile =
-      await this.playlistDb.getUserPlaylistFilesAndFileByPlaylistId(playlistId);
 
-    const newFiles = files.filter(
-      (file) =>
-        !taggedUserPlaylistFile.some((upff) => upff.file.sourceUrl === file),
-    );
+    userPlaylists.forEach(async (userPlaylist) => {
+      const taggedUserPlaylistFile =
+        await this.playlistDb.getUserPlaylistFilesAndFileByPlaylistId(
+          userPlaylist.id,
+        );
 
-    const removedFiles = taggedUserPlaylistFile.filter(
-      (upff) => !files.includes(upff.file.sourceUrl),
-    );
+      const newFiles = files.filter(
+        (file) =>
+          !taggedUserPlaylistFile.some((upff) => upff.file.sourceUrl === file),
+      );
 
-    newFiles.forEach(async (file) => {
-      await this.downloadFile(playlistId, file);
-    });
+      const removedFiles = taggedUserPlaylistFile.filter(
+        (upff) => !files.includes(upff.file.sourceUrl),
+      );
 
-    removedFiles.forEach(async (upff) => {
-      await this.playlistDb.updateUserPlaylistFile(upff.file.id, false);
-      const opts = {
-        userFileId: upff.file.id,
-        isSynchronized: false,
-        wasChanged: true,
-      };
-      await this.db.updateFileSynchronization(opts);
+      newFiles.forEach(async (file) => {
+        await this.downloadFile(playlistId, file);
+      });
+
+      removedFiles.forEach(async (upff) => {
+        await this.playlistDb.updateUserPlaylistFile(upff.file.id, false);
+        const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+          timestamp: new Date().toISOString(),
+          userFileId: upff.file.id,
+          isSynchronized: false,
+          wasChanged: true,
+        });
+        await this.db.updateFileSynchronization(fileSynchronization);
+      });
     });
   };
 }

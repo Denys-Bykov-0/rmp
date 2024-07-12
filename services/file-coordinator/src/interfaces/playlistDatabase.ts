@@ -6,7 +6,7 @@ import { UserPlaylistFileDTO } from '@dtos/userPlaylistFileDTO';
 export abstract class PlaylistDatabase {
   public abstract getUserPlaylistsByPlaylistId: (
     playlistId: string,
-  ) => Promise<UserPlaylistDTO[] | null>;
+  ) => Promise<UserPlaylistDTO[]>;
   public abstract getUserPlaylistFile: (
     fileId: string,
     userId: string,

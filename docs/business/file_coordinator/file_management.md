@@ -153,7 +153,7 @@ This functionality is responsible for the playlist updating.
 
 API:
 ```json
-routing-key: parsing/playlists/youtube
+routing-key: playlist/update
 body:
 {
     "playlist_id": "1",

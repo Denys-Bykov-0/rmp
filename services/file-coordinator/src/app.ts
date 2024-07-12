@@ -76,7 +76,7 @@ class App {
     );
     await amqpConsumer.consume(
       this.amqpConfigConnection,
-      'parsing/playlists/youtube',
+      'playlist/update',
       fileController.handle_message,
     );
   };
