@@ -1,3 +1,4 @@
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { TagMapping } from '@src/entities/tagMapping';
 import { TagMappingPriority } from '@src/entities/tagMappingPriority';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
@@ -51,13 +52,13 @@ class TagMappingWorker {
       );
 
       for (const userFileId of userFilesIds) {
-        const opts = {
+        const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
           timestamp: new Date().toISOString(),
           userFileId: userFileId,
           isSynchronized: false,
           wasChanged: true,
-        };
-        await this.fileDb.updateSynchronizationRecords(opts);
+        });
+        await this.fileDb.updateSynchronizationRecords(fileSynchronization);
       }
 
       return new TagMappingMapper().toEntity(updatedTagMappingDTO);
