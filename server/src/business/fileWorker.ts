@@ -83,10 +83,9 @@ export class FileWorker {
     );
 
     if (playlistFile) {
-      const opts = {
+      throw new ProcessingError({
         message: 'File already exists',
-      };
-      throw new ProcessingError(opts);
+      });
     }
 
     await this.playlistDb.insertUserPaylistFile(userPlaylistId, file.id);
@@ -146,26 +145,23 @@ export class FileWorker {
 
     const taggedFile = await this.db.getTaggedFile(id, deviceId, user.id);
     if (!taggedFile) {
-      const opts = {
+      throw new ProcessingError({
         message: 'File not found',
         errorCode: ProcessingErrorCode.FILE_NOT_FOUND,
-      };
-      throw new ProcessingError(opts);
+      });
     }
 
     if (taggedFile.status !== Status.Completed) {
       if (taggedFile.status === Status.Error) {
-        const opts = {
+        throw new ProcessingError({
           message: 'File preparation failed',
           errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
-        };
-        throw new ProcessingError(opts);
+        });
       } else {
-        const opts = {
+        throw new ProcessingError({
           message: 'File is not ready yet',
           errorCode: ProcessingErrorCode.FILE_NOT_READY,
-        };
-        throw new ProcessingError(opts);
+        });
       }
     }
 
@@ -176,18 +172,16 @@ export class FileWorker {
           taggedFile.id
         );
         if (!mappingDTO) {
-          const opts = {
+          throw new ProcessingError({
             message: 'Tag mapping does not exist',
             errorCode: ProcessingErrorCode.MAPPING_NOT_FOUND,
-          };
-          throw new ProcessingError(opts);
+          });
         }
         mapping = new TagMappingMapper().toEntity(mappingDTO);
       } else {
-        const opts = {
+        throw new ProcessingError({
           message: `${variation} is not a valid epxand option`,
-        };
-        throw new ProcessingError(opts);
+        });
       }
     }
 
@@ -271,10 +265,9 @@ export class FileWorker {
     const file = await this.db.getFile(fileId);
 
     if (file === null || file!.status !== Status.Completed) {
-      const opts = {
+      throw new ProcessingError({
         message: 'File not found or not processed',
-      };
-      throw new ProcessingError(opts);
+      });
     }
 
     const tag = await this.tagDb.getMappedTag(fileId, userId);
@@ -291,10 +284,9 @@ export class FileWorker {
   ): Promise<void> => {
     const userFile = await this.db.getUserFile(userId, fileId);
     if (!userFile) {
-      const opts = {
+      throw new ProcessingError({
         message: 'File does not exist',
-      };
-      throw new ProcessingError(opts);
+      });
     }
     await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
     const opts = {
