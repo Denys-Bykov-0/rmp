@@ -39,20 +39,18 @@ class PlaylistWorker {
     try {
       normalizedUrl = this.filePlugin.normalizeUrlPlaylist(url);
     } catch (error) {
-      const opts = {
+      throw new ProcessingError({
         message: 'Invalid URL',
-      };
-      throw new ProcessingError(opts);
+      });
     }
     const existingPlaylist =
       await this.db.getPlaylistBySourceUrl(normalizedUrl);
 
     if (existingPlaylist) {
       if (await this.db.getUserPlaylistByUserId(userId, existingPlaylist.id)) {
-        const opts = {
+        throw new ProcessingError({
           message: 'Playlist already exists',
-        };
-        throw new ProcessingError(opts);
+        });
       }
     }
 

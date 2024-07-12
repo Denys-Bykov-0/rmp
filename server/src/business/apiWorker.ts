@@ -13,10 +13,9 @@ export class ApiWorker {
       );
       return swaggerSpec;
     } catch (error) {
-      const opts = {
+      throw new ProcessingError({
         message: 'Error reading swagger spec',
-      };
-      throw new ProcessingError(opts);
+      });
     }
   };
 }

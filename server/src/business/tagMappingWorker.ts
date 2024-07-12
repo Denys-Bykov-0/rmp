@@ -22,17 +22,15 @@ class TagMappingWorker {
     try {
       const tagMappingPriorityDTO = await this.db.getTagMappingPriority(userId);
       if (!tagMappingPriorityDTO) {
-        const opts = {
+        throw new ProcessingError({
           message: 'Tag mapping priority does not exist',
-        };
-        throw new ProcessingError(opts);
+        });
       }
       return new TagMappingPriorityMapper().toEntity(tagMappingPriorityDTO);
     } catch (error) {
-      const opts = {
+      throw new ProcessingError({
         message: 'Failed to get tag mapping priority',
-      };
-      throw new ProcessingError(opts);
+      });
     }
   };
 
@@ -64,10 +62,9 @@ class TagMappingWorker {
 
       return new TagMappingMapper().toEntity(updatedTagMappingDTO);
     } catch (error) {
-      const opts = {
+      throw new ProcessingError({
         message: 'Failed to update tag mapping',
-      };
-      throw new ProcessingError(opts);
+      });
     }
   };
 
@@ -84,10 +81,9 @@ class TagMappingWorker {
         await this.db.updateTagMappingPriority(tagMappingPriorityDTO)
       );
     } catch (error) {
-      const opts = {
+      throw new ProcessingError({
         message: 'Failed to update tag mapping priority',
-      };
-      throw new ProcessingError(opts);
+      });
     }
   };
 }
