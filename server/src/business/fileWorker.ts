@@ -1,10 +1,14 @@
 import { randomUUID } from 'crypto';
 
-import { ProcessingError } from '@src/business/processingError';
+import {
+  ProcessingError,
+  ProcessingErrorCode,
+} from '@src/business/processingError';
 import { FileDTO } from '@src/dtos/fileDTO';
 import { Status } from '@src/dtos/statusDTO';
 import { TagDTO } from '@src/dtos/tagDTO';
 import { TagMappingDTO } from '@src/dtos/tagMappingDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { File } from '@src/entities/file';
 import { FileData } from '@src/entities/fileData';
 import { GetFileResponse } from '@src/entities/getFileResponse';
@@ -67,7 +71,7 @@ export class FileWorker {
       await this.tagDb.insertTag(
         TagDTO.allFromOneSource('0', file.id, true, sourceId, Status.Created)
       );
-      await this.requestFileProcessing(file!, user.id);
+      await this.requestFileProcessing(file);
     }
 
     const userPlaylistId = await this.playlistDb.getDefaultUserPlaylistId(
@@ -80,7 +84,9 @@ export class FileWorker {
     );
 
     if (playlistFile) {
-      throw new ProcessingError('File already exists');
+      throw new ProcessingError({
+        message: 'File already exists',
+      });
     }
 
     await this.playlistDb.insertUserPaylistFile(userPlaylistId, file.id);
@@ -99,16 +105,13 @@ export class FileWorker {
     );
     await this.db.insertSynchronizationRecordsByUser(user.id, userFileId);
     const taggedFile = await this.db.getTaggedFileByUrl(file.sourceUrl, user);
-    return new TaggedFileMapper().toEntity(taggedFile![0]);
+    return new TaggedFileMapper().toEntity(taggedFile!);
   };
 
-  public requestFileProcessing = async (
-    file: FileDTO,
-    userId: string
-  ): Promise<void> => {
+  public requestFileProcessing = async (file: FileDTO): Promise<void> => {
     const source = await this.sourceDb.getSource(file.source);
     await this.filePlugin.downloadFile(file, source!.description);
-    await this.tagPlugin.tagFile(file, userId, source!.description);
+    await this.tagPlugin.tagFile(file, source!.description);
   };
 
   public getTaggedFilesByUser = async (
@@ -141,25 +144,50 @@ export class FileWorker {
   ): Promise<GetFileResponse> => {
     let mapping = null;
 
-    const file = await this.db.getTaggedFile(id, deviceId, user.id);
-    if (!file) {
-      throw new ProcessingError('File not found');
+    const taggedFile = await this.db.getTaggedFile(id, deviceId, user.id);
+    if (!taggedFile) {
+      throw new ProcessingError({
+        message: 'File not found',
+        errorCode: ProcessingErrorCode.FILE_NOT_FOUND,
+      });
+    }
+
+    if (taggedFile.status !== Status.Completed) {
+      if (taggedFile.status === Status.Error) {
+        throw new ProcessingError({
+          message: 'File preparation failed',
+          errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
+        });
+      } else {
+        throw new ProcessingError({
+          message: 'File is not ready yet',
+          errorCode: ProcessingErrorCode.FILE_NOT_READY,
+        });
+      }
     }
 
     for (const variation of expand) {
       if (variation === 'mapping') {
-        const mappingDTO = await this.tagDb.getTagMapping(user.id, file[0].id);
+        const mappingDTO = await this.tagDb.getTagMapping(
+          user.id,
+          taggedFile.id
+        );
         if (!mappingDTO) {
-          throw new ProcessingError('Mapping not found');
+          throw new ProcessingError({
+            message: 'Tag mapping does not exist',
+            errorCode: ProcessingErrorCode.MAPPING_NOT_FOUND,
+          });
         }
         mapping = new TagMappingMapper().toEntity(mappingDTO);
       } else {
-        throw new ProcessingError(`${variation} is not a valid epxand option`);
+        throw new ProcessingError({
+          message: `${variation} is not a valid epxand option`,
+        });
       }
     }
 
     return new GetFileResponse(
-      new TaggedFileMapper().toEntity(file[0]),
+      new TaggedFileMapper().toEntity(taggedFile),
       mapping
     );
   };
@@ -180,12 +208,13 @@ export class FileWorker {
     );
 
     if (userPlaylistFiles) {
-      await this.db.updateSynchronizationRecords(
-        new Date().toISOString(),
-        userFile!.id,
-        true,
-        false
-      );
+      const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+        timestamp: new Date().toISOString(),
+        userFileId: userFile!.id,
+        isSynchronized: true,
+        wasChanged: false,
+      });
+      await this.db.updateSynchronizationRecords(fileSynchronization);
       return;
     }
 
@@ -237,7 +266,9 @@ export class FileWorker {
     const file = await this.db.getFile(fileId);
 
     if (file === null || file!.status !== Status.Completed) {
-      throw new ProcessingError('File not found or not processed');
+      throw new ProcessingError({
+        message: 'File not found or not processed',
+      });
     }
 
     const tag = await this.tagDb.getMappedTag(fileId, userId);
@@ -254,15 +285,18 @@ export class FileWorker {
   ): Promise<void> => {
     const userFile = await this.db.getUserFile(userId, fileId);
     if (!userFile) {
-      throw new ProcessingError('File does not exist');
+      throw new ProcessingError({
+        message: 'File does not exist',
+      });
     }
     await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
-    await this.db.updateSynchronizationRecords(
-      new Date().toISOString(),
-      userFile.id,
-      false,
-      true
-    );
+    const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+      timestamp: new Date().toISOString(),
+      userFileId: userFile!.id,
+      isSynchronized: false,
+      wasChanged: true,
+    });
+    await this.db.updateSynchronizationRecords(fileSynchronization);
     return;
   };
 }

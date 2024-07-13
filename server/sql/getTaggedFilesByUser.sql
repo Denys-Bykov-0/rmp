@@ -13,8 +13,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.file_id = f.id
-      AND t.source = tm.title
+      t.source = tm.title
+      and t.file_id = f.id
   ) as tag_title,
   (
     SELECT
@@ -22,8 +22,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.file_id = f.id
-      AND t.source = tm.artist
+      t.source = tm.artist
+      and t.file_id = f.id
   ) as tag_artist,
   (
     SELECT
@@ -31,8 +31,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.file_id = f.id
-      AND t.source = tm.album
+      t.source = tm.album
+      and t.file_id = f.id
   ) as tag_album,
   (
     SELECT
@@ -40,8 +40,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.file_id = f.id
-      AND t.source = tm.year
+      t.source = tm.year
+      and t.file_id = f.id
   ) as tag_year,
   (
     SELECT
@@ -49,17 +49,35 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.file_id = f.id
-      AND t.source = tm.track_number
+      t.source = tm.track_number
+      and t.file_id = f.id
   ) as tag_track_number,
   tm.picture as tag_picture,
-  p.id as playlist_id,
-  p.source_url as playlist_source_url,
-  p.source_id as playlist_source,
-  p.added_ts as playlist_added_ts,
-  p.status as playlist_status,
-  p.synchronization_ts as playlist_synchronization_ts,
-  p.title as playlist_title
+  ARRAY_AGG(
+    JSON_BUILD_OBJECT(
+      'playlist_id',
+      p.id,
+      'playlist_status',
+      p.status,
+      'playlist_source_url',
+      p.source_url,
+      'source_id',
+      p.source_id,
+      'source_description',
+      (
+        SELECT
+          description
+        FROM
+          sources as s
+        WHERE
+          s.id = p.source_id
+      ),
+      'playlist_synchronization_ts',
+      p.synchronization_ts,
+      'playlist_title',
+      p.title
+    )
+  ) as playlists
 FROM
   files as f
   JOIN sources as s ON f.source = s.id

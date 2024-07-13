@@ -1,3 +1,4 @@
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { TagMapping } from '@src/entities/tagMapping';
 import { TagMappingPriority } from '@src/entities/tagMappingPriority';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
@@ -22,11 +23,15 @@ class TagMappingWorker {
     try {
       const tagMappingPriorityDTO = await this.db.getTagMappingPriority(userId);
       if (!tagMappingPriorityDTO) {
-        throw new ProcessingError('Tag mapping priority does not exist');
+        throw new ProcessingError({
+          message: 'Tag mapping priority does not exist',
+        });
       }
       return new TagMappingPriorityMapper().toEntity(tagMappingPriorityDTO);
     } catch (error) {
-      throw new ProcessingError('Failed to get tag mapping priority');
+      throw new ProcessingError({
+        message: 'Failed to get tag mapping priority',
+      });
     }
   };
 
@@ -36,6 +41,7 @@ class TagMappingWorker {
   ): Promise<TagMapping> => {
     try {
       const tagMappingDTO = new TagMappingMapper().toDTO(tagMapping);
+      tagMappingDTO.fixed = true;
       const updatedTagMappingDTO = await this.db.updateTagMapping(
         tagMappingDTO,
         fileId
@@ -46,17 +52,20 @@ class TagMappingWorker {
       );
 
       for (const userFileId of userFilesIds) {
-        await this.fileDb.updateSynchronizationRecords(
-          new Date().toISOString(),
-          userFileId,
-          false,
-          true
-        );
+        const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+          timestamp: new Date().toISOString(),
+          userFileId: userFileId,
+          isSynchronized: false,
+          wasChanged: true,
+        });
+        await this.fileDb.updateSynchronizationRecords(fileSynchronization);
       }
 
       return new TagMappingMapper().toEntity(updatedTagMappingDTO);
     } catch (error) {
-      throw new ProcessingError('Failed to update tag mapping');
+      throw new ProcessingError({
+        message: 'Failed to update tag mapping',
+      });
     }
   };
 
@@ -73,7 +82,9 @@ class TagMappingWorker {
         await this.db.updateTagMappingPriority(tagMappingPriorityDTO)
       );
     } catch (error) {
-      throw new ProcessingError('Failed to update tag mapping priority');
+      throw new ProcessingError({
+        message: 'Failed to update tag mapping priority',
+      });
     }
   };
 }

@@ -1,9 +1,14 @@
+import { randomUUID as randomUUIDV4 } from 'crypto';
 import { Logger } from 'log4js';
+import { FileDTO } from '@dtos/fileDTO';
 import { TagDTO } from '@dtos/tagDTO';
 import { TagMappingDTO } from '@dtos/tagMappingDTO';
 import { TagMappingPriorityDTO } from '@dtos/tagMappingPriorityDTO';
+import { UpdateFileSynchronizationDTO } from '@dtos/updateFileSynchronizationDTO';
 import { Status } from '@entities/status';
 import { FileCoordinatorDatabase } from '@interfaces/fileCoordinatorDatabase';
+import { FilePlugin } from '@interfaces/filePlugin';
+import { PlaylistDatabase } from '@interfaces/playlistDatabase';
 import { SourceDatabase } from '@interfaces/sourceDatabase';
 import { TagDatabase } from '@interfaces/tagDatabase';
 import { TagPlugin } from '@interfaces/tagPlugin';
@@ -12,18 +17,24 @@ class FileCoordinatorWorker {
   private db: FileCoordinatorDatabase;
   private tagDb: TagDatabase;
   private sourceDb: SourceDatabase;
+  private playlistDb: PlaylistDatabase;
+  private filePlugin: FilePlugin;
   private tagPlugin: TagPlugin;
   private logger: Logger;
   constructor(
     db: FileCoordinatorDatabase,
     tagDb: TagDatabase,
     sourceDb: SourceDatabase,
+    playlistDb: PlaylistDatabase,
+    filePlugin: FilePlugin,
     tagPlugin: TagPlugin,
     logger: Logger,
   ) {
     this.db = db;
     this.tagDb = tagDb;
     this.sourceDb = sourceDb;
+    this.playlistDb = playlistDb;
+    this.filePlugin = filePlugin;
     this.tagPlugin = tagPlugin;
     this.logger = logger;
   }
@@ -39,6 +50,7 @@ class FileCoordinatorWorker {
     if (tags.length == 0) {
       return;
     }
+
     if (tags.length == 1) {
       const tag = tags[0];
       if (tag.status === Status.Completed) {
@@ -76,7 +88,14 @@ class FileCoordinatorWorker {
         newTagMapping.userId!,
       );
 
-      await this.db.updateFileSynchronization(userFileId, false);
+      const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+        timestamp: new Date().toISOString(),
+        userFileId: userFileId,
+        isSynchronized: false,
+        wasChanged: true,
+      });
+
+      await this.db.updateFileSynchronization(fileSynchronization);
     }
 
     if (file.status === Status.Downloaded) {
@@ -169,6 +188,121 @@ class FileCoordinatorWorker {
         await this.tagPlugin.parseTags(fileId, source.description);
       }),
     );
+  };
+
+  public downloadFile = async (
+    playlistId: string,
+    url: string,
+  ): Promise<void> => {
+    const sourceId = await this.filePlugin.getSource(url);
+    const normalizedUrl = await this.filePlugin.normalizeUrl(url);
+
+    let file = await this.db.getFileByUrl(normalizedUrl);
+
+    if (!file) {
+      file = await this.db.insertFile(
+        new FileDTO(
+          '0',
+          randomUUIDV4(),
+          sourceId,
+          Status.Created,
+          normalizedUrl,
+        ),
+      );
+      await this.tagDb.insertTag(
+        TagDTO.allFromOneSource('0', file.id, true, sourceId, Status.Created),
+      );
+      await this.requestFileProcessing(file);
+    }
+    const userPlaylists =
+      await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
+
+    userPlaylists!.forEach(async (userPlaylist) => {
+      const userPlaylistFile = await this.playlistDb.getUserPlaylistFile(
+        file!.id,
+        userPlaylist.userId,
+        playlistId,
+      );
+
+      if (userPlaylistFile) {
+        return;
+      }
+
+      await this.playlistDb.insertUserPlaylistFile({
+        fileId: file!.id,
+        playlistId: userPlaylist.playlistId,
+        missingFromRemote: false,
+      });
+      const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
+      if (!userFile) {
+        await this.db.insertUserFile(userPlaylist.userId, file!.id);
+      }
+      await this.tagDb.insertTagMapping(
+        TagMappingDTO.allFromOneSource(userPlaylist.userId, file!.id, sourceId),
+      );
+
+      const devices = await this.db.getDeviceIdsByUser(userPlaylist.userId);
+
+      devices.forEach(async (deviceId) => {
+        await this.db.insertSynchronizationRecordsByDevice(
+          userFile!.id,
+          deviceId,
+        );
+      });
+    });
+  };
+
+  public requestFileProcessing = async (file: FileDTO): Promise<void> => {
+    const source = await this.sourceDb.getSource(file.source);
+    await this.filePlugin.downloadFile(file, source!.description);
+    await this.tagPlugin.tagFile(file, source!.description);
+  };
+
+  public processPlaylist = async (
+    playlistId: string,
+    files: string[],
+  ): Promise<void> => {
+    const playlist = await this.playlistDb.getPlaylistByPlaylistId(playlistId);
+    if (!playlist) {
+      this.logger.error(`Playlist not found: ${playlistId}`);
+      throw new Error('Playlist not found');
+    }
+    const userPlaylists =
+      await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
+
+    if (userPlaylists.length == 0) {
+      this.logger.error(`User playlists not found: ${playlistId}`);
+      throw new Error('User playlists not found');
+    }
+
+    userPlaylists.forEach(async (userPlaylist) => {
+      const currentFiles =
+        await this.playlistDb.getUserPlaylistFilesAndFileByPlaylistId(
+          userPlaylist.id,
+        );
+
+      const newFiles = currentFiles.filter((upff) =>
+        files.includes(upff.file.sourceUrl),
+      );
+
+      const removedFiles = currentFiles.filter(
+        (upff) => !files.includes(upff.file.sourceUrl),
+      );
+
+      newFiles.forEach(async (currentFile) => {
+        await this.downloadFile(playlistId, currentFile.file.sourceUrl);
+      });
+
+      removedFiles.forEach(async (upff) => {
+        await this.playlistDb.updateUserPlaylistFile(upff.file.id, false);
+        const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
+          timestamp: new Date().toISOString(),
+          userFileId: upff.file.id,
+          isSynchronized: false,
+        });
+        await this.db.updateFileSynchronization(fileSynchronization);
+      });
+    });
   };
 }
 

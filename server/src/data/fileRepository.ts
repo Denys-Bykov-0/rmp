@@ -3,6 +3,7 @@ import pg from 'pg';
 import { FileDTO } from '@src/dtos/fileDTO';
 import { FileSynchronizationDTO } from '@src/dtos/fileSynchronizationDTO';
 import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { UserDTO } from '@src/dtos/userDTO';
 import { UserFileDTO } from '@src/dtos/userFileDTO';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
@@ -41,18 +42,14 @@ export class FileRepository implements iFileDatabase {
   public getTaggedFileByUrl = async (
     url: string,
     user: UserDTO
-  ): Promise<TaggedFileDTO[] | null> => {
+  ): Promise<TaggedFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getTaggedFileByUrl');
       dataLogger.debug(query);
       const queryResult = await client.query(query, [url, user.id]);
-      if (queryResult.rows.length > 0) {
-        const result = TaggedFileDTO.fromJSONS(queryResult.rows);
-        return result;
-      } else {
-        return null;
-      }
+      const { rows } = queryResult;
+      return rows.length > 0 ? TaggedFileDTO.fromJSON(rows[0]) : null;
     } catch (err) {
       dataLogger.error(err);
       throw err;
@@ -130,12 +127,13 @@ export class FileRepository implements iFileDatabase {
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.extendGetTaggedFilesByUser(
+      let query = this.extendGetTaggedFilesByUser(
         this.sqlManager.getQuery('getTaggedFilesByUser'),
         statuses,
         synchronized,
         playlists
       );
+      query = this.extendGroupRequest(query);
 
       dataLogger.debug(query);
       const queryResult = await client.query(
@@ -148,13 +146,22 @@ export class FileRepository implements iFileDatabase {
           playlists
         )
       );
-      return TaggedFileDTO.fromJSONS(queryResult.rows);
+      const { rows } = queryResult;
+      return rows.map((row) => TaggedFileDTO.fromJSON(row));
     } catch (err) {
       dataLogger.error(err);
       throw err;
     } finally {
       client.release();
     }
+  };
+
+  public extendGroupRequest = (query: string): string => {
+    return `${query} GROUP BY f.id, s.id, s.description,
+            s.allow_for_secondary_tag_parsing, s.logo_path,
+            f.status, f.source_url, fs.is_synchronized,
+            tm.title, tm.artist, tm.album, tm.year,
+            tm.track_number, tm.picture`;
   };
 
   public insertFile = async (file: FileDTO): Promise<FileDTO> => {
@@ -237,16 +244,14 @@ export class FileRepository implements iFileDatabase {
     id: string,
     deviceId: string,
     userId: string
-  ): Promise<TaggedFileDTO[] | null> => {
+  ): Promise<TaggedFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getTaggedFile');
       dataLogger.debug(query);
       const queryResult = await client.query(query, [id, deviceId, userId]);
-      if (queryResult.rows.length === 0) {
-        return null;
-      }
-      return TaggedFileDTO.fromJSONS(queryResult.rows);
+      const { rows } = queryResult;
+      return rows.length > 0 ? TaggedFileDTO.fromJSON(rows[0]) : null;
     } catch (err) {
       throw new Error(`FilesRepository.getTaggedFile: ${err}`);
     } finally {
@@ -306,33 +311,26 @@ export class FileRepository implements iFileDatabase {
   };
 
   public updateSynchronizationRecords = async (
-    timestamp: string,
-    userFileId: string,
-    isSynchronized: boolean,
-    wasChanged: boolean,
-    deviceId?: string
+    fileSynchronization: UpdateFileSynchronizationDTO
   ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       let query = this.sqlManager.getQuery('updateSynchronizationRecords');
-      if (deviceId) {
-        query += ' AND device_id = $5';
-        dataLogger.debug(query);
-        await client.query(query, [
-          timestamp,
-          userFileId,
-          isSynchronized,
-          wasChanged,
-          deviceId,
-        ]);
+      const parameters = [
+        fileSynchronization.timestamp,
+        fileSynchronization.userFileId,
+        fileSynchronization.isSynchronized,
+      ];
+      if (fileSynchronization.wasChanged) {
+        query += ' AND was_changed = $' + (parameters.length + 1);
+        parameters.push(fileSynchronization.wasChanged);
+      }
+      if (fileSynchronization.deviceId) {
+        query += ' AND device_id = $' + (parameters.length + 1);
+        parameters.push(fileSynchronization.deviceId);
       }
       dataLogger.debug(query);
-      await client.query(query, [
-        timestamp,
-        userFileId,
-        isSynchronized,
-        wasChanged,
-      ]);
+      await client.query(query, parameters);
     } catch (err) {
       throw new Error(`FilesRepository.updateSynchronizationRecords: ${err}`);
     } finally {

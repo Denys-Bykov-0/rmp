@@ -153,7 +153,7 @@ This functionality is responsible for the playlist updating.
 
 API:
 ```json
-routing-key: parsing/playlists/youtube
+routing-key: playlist/update
 body:
 {
     "playlist_id": "1",
@@ -242,8 +242,8 @@ Try to find a record in the [files](../../database/files/files.md) table by the 
 source_url = normalizedUrl  
 
 Does the record exist?
-- yes - go to AC 3
-- no - go to AC 7
+- yes - go to AC 7
+- no - go to AC 3
 
 #### AC 3
 

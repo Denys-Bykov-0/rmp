@@ -35,16 +35,18 @@ export class UserWorker {
   ): Promise<User> => {
     for (const permission of permissions) {
       if (!payload.permissions.includes(permission)) {
-        throw new ProcessingError(
-          `User does not have permission: ${permission}`
-        );
+        throw new ProcessingError({
+          message: `User does not have permission: ${permission}`,
+        });
       }
     }
     const dbUser = await this.getUser(payload.sub);
     if (dbUser) {
       return dbUser;
     } else {
-      throw new ProcessingError('User not found');
+      throw new ProcessingError({
+        message: 'User not found',
+      });
     }
   };
 
@@ -83,12 +85,16 @@ export class UserWorker {
         await this.db.insertDefaultTagMappingPriority(priority);
         await this.db.insertDefaultUserPlaylist(user.id);
       } catch (error) {
-        throw new ProcessingError(`Failed to insert - ${error}`);
+        throw new ProcessingError({
+          message: 'Failed to insert default tag mapping priority',
+        });
       }
     }
 
     if (await this.db.getDevice(device.id)) {
-      throw new ProcessingError('Device is already registered');
+      throw new ProcessingError({
+        message: 'Device is already registered',
+      });
     }
 
     device.user_id = user.id;
@@ -120,14 +126,16 @@ export class UserWorker {
         await this.db.insertDefaultTagMappingPriority(priority);
         await this.db.insertDefaultUserPlaylist(user.id);
       } catch (error) {
-        throw new ProcessingError(
-          'Failed to insert default tag mapping priority'
-        );
+        throw new ProcessingError({
+          message: 'Failed to insert default tag mapping priority',
+        });
       }
     }
 
     if (await this.db.getDevice(device.id)) {
-      throw new ProcessingError('Device is already registered');
+      throw new ProcessingError({
+        message: 'Device is already registered',
+      });
     }
 
     device.user_id = user.id;

@@ -8,6 +8,7 @@ class TagMappingDTO {
   public picture: string;
   public year: string;
   public trackNumber: string;
+  public fixed: boolean;
 
   constructor(
     id: string | null,
@@ -18,7 +19,8 @@ class TagMappingDTO {
     album: string,
     picture: string,
     year: string,
-    trackNumber: string
+    trackNumber: string,
+    fixed: boolean = false
   ) {
     this.id = id;
     this.userId = userId;
@@ -29,6 +31,7 @@ class TagMappingDTO {
     this.picture = picture;
     this.year = year;
     this.trackNumber = trackNumber;
+    this.fixed = fixed;
   }
 
   public static allFromOneSource = (

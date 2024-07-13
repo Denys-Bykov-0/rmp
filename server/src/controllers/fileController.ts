@@ -63,7 +63,10 @@ class FileController extends BaseController {
       {
         const { deviceId } = request.query;
         if (!deviceId) {
-          throw new ProcessingError('Device ID is required');
+          const opts = {
+            message: 'Device ID is required',
+          };
+          throw new ProcessingError(opts);
         }
         deviceIdParam = deviceId!.toString();
       }
@@ -119,7 +122,10 @@ class FileController extends BaseController {
       {
         const { deviceId } = request.query;
         if (!deviceId) {
-          throw new ProcessingError('Device ID is required');
+          const opts = {
+            message: 'Device ID is required',
+          };
+          throw new ProcessingError(opts);
         }
         deviceIdParam = deviceId!.toString();
       }
@@ -152,7 +158,10 @@ class FileController extends BaseController {
       {
         const { deviceId } = request.query;
         if (!deviceId) {
-          throw new ProcessingError('Device ID is required');
+          const opts = {
+            message: 'Device ID is required',
+          };
+          throw new ProcessingError(opts);
         }
         deviceIdParam = deviceId!.toString();
       }

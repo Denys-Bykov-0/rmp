@@ -13,7 +13,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.title
+      t.source = tm.title
+      and t.file_id = f.id
   ) as tag_title,
   (
     SELECT
@@ -21,7 +22,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.artist
+      t.source = tm.artist
+      and t.file_id = f.id
   ) as tag_artist,
   (
     SELECT
@@ -29,7 +31,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.album
+      t.source = tm.album
+      and t.file_id = f.id
   ) as tag_album,
   (
     SELECT
@@ -37,7 +40,8 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.year
+      t.source = tm.year
+      and t.file_id = f.id
   ) as tag_year,
   (
     SELECT
@@ -45,14 +49,57 @@ SELECT
     FROM
       tags as t
     WHERE
-      t.id = tm.track_number
+      t.source = tm.track_number
+      and t.file_id = f.id
   ) as tag_track_number,
-  tm.picture as tag_picture
+  tm.picture as tag_picture,
+  ARRAY_AGG(
+    JSON_BUILD_OBJECT(
+      'playlist_id',
+      p.id,
+      'playlist_status',
+      p.status,
+      'playlist_source_url',
+      p.source_url,
+      'source_id',
+      p.source_id,
+      'source_description',
+      (
+        SELECT
+          description
+        FROM
+          sources as s
+        WHERE
+          s.id = p.source_id
+      ),
+      'playlist_synchronization_ts',
+      p.synchronization_ts,
+      'playlist_title',
+      p.title
+    )
+  ) as playlists
 FROM
   files as f
   LEFT JOIN sources as s ON f.source = s.id
   LEFT JOIN tag_mappings as tm ON f.id = tm.file_id
   AND tm.user_id = $2
   LEFT JOIN user_files as uf ON f.id = uf.file_id
+  JOIN user_playlist_files as upf ON f.id = upf.file_id
+  JOIN user_playlists as up ON upf.user_playlist_id = up.id
+  JOIN playlists as p ON up.playlist_id = p.id
 WHERE
   f.source_url = $1
+GROUP BY
+  f.id,
+  s.id,
+  s.description,
+  s.allow_for_secondary_tag_parsing,
+  s.logo_path,
+  f.status,
+  f.source_url,
+  tm.title,
+  tm.artist,
+  tm.album,
+  tm.year,
+  tm.track_number,
+  tm.picture

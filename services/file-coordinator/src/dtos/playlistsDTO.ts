@@ -8,7 +8,7 @@ class PlaylistDTO {
     public readonly addedTs: Date,
     public readonly status: string,
     public readonly synchronizationTs: Date,
-    public readonly title: string
+    public readonly title: string,
   ) {}
 
   public static fromJSON(json: JSON.JSONObject): PlaylistDTO {
@@ -29,7 +29,7 @@ class PlaylistDTO {
       opts.addedTs,
       opts.status,
       opts.synchronizationTs,
-      opts.title
+      opts.title,
     );
   }
 }

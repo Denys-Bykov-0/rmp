@@ -24,7 +24,9 @@ export class SourceWorker {
     const source = await this.db.getSource(sourceId);
 
     if (!source) {
-      throw new ProcessingError('Source not found');
+      throw new ProcessingError({
+        message: 'Source not found',
+      });
     }
     return source.logoPath;
   };

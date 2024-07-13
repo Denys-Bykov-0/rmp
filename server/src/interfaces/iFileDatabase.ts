@@ -1,6 +1,7 @@
 import { FileDTO } from '@src/dtos/fileDTO';
 import { FileSynchronizationDTO } from '@src/dtos/fileSynchronizationDTO';
 import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { UserDTO } from '@src/dtos/userDTO';
 import { UserFileDTO } from '@src/dtos/userFileDTO';
 
@@ -9,7 +10,7 @@ export abstract class iFileDatabase {
   public abstract getTaggedFileByUrl: (
     url: string,
     user: UserDTO
-  ) => Promise<TaggedFileDTO[] | null>;
+  ) => Promise<TaggedFileDTO | null>;
   public abstract getTaggedFilesByUser: (
     user: UserDTO,
     deviceId: string,
@@ -26,7 +27,7 @@ export abstract class iFileDatabase {
     id: string,
     deviceId: string,
     userId: string
-  ) => Promise<TaggedFileDTO[] | null>;
+  ) => Promise<TaggedFileDTO | null>;
   public abstract doesFileExist(fileId: string): Promise<boolean>;
   public abstract getUserFile: (
     userId: string,
@@ -41,11 +42,7 @@ export abstract class iFileDatabase {
     userFileId: string
   ) => Promise<void>;
   public abstract updateSynchronizationRecords: (
-    timestamp: string,
-    userFileId: string,
-    isSynchronized: boolean,
-    wasChanged: boolean,
-    deviceId?: string
+    fileSynchronization: UpdateFileSynchronizationDTO
   ) => Promise<void>;
   public abstract getUserFiles: (
     userId: string,

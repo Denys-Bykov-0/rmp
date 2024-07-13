@@ -16,7 +16,9 @@ export class FileSystemRepository implements iFileSystem {
           await fs.unlink(join(this.config.appPathStorage, 'img', path));
           break;
         case FileType.MUSIC:
-          await fs.unlink(join(this.config.appPathStorage, 'music', path));
+          await fs.unlink(
+            join(this.config.appPathStorage, 'music', path + '.mp3')
+          );
           break;
         default:
           throw new Error('Unknown file type');

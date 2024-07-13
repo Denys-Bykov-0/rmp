@@ -73,7 +73,7 @@ class AMQPConsumer {
   public consume = async (
     amqpConfigConnection: string,
     queueName: string,
-    callback: (msg: Message) => void,
+    callback: (msg: Message, queueName: string) => void,
   ) => {
     const connection = await this.connectToAMQP(amqpConfigConnection);
     const channel = await this.createChannel(connection);
@@ -82,7 +82,7 @@ class AMQPConsumer {
       q.queue,
       (msg: Message | null) => {
         if (msg) {
-          callback(msg);
+          callback(msg, queueName);
         }
       },
       { noAck: true },
