@@ -223,6 +223,7 @@ class FileCoordinatorWorker {
         userPlaylist.userId,
         playlistId,
       );
+
       if (userPlaylistFile) {
         return;
       }
