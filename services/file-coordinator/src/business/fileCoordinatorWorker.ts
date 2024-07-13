@@ -226,8 +226,8 @@ class FileCoordinatorWorker {
       if (!userPlaylistFile) {
         await this.playlistDb.insertUserPlaylistFile({
           fileId: file!.id,
-          playlistId: playlistId,
-          missingFromRemote: true,
+          playlistId: userPlaylist.playlistId,
+          missingFromRemote: false,
         });
       }
       const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
