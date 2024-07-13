@@ -316,24 +316,21 @@ export class FileRepository implements iFileDatabase {
     const client = await this.dbPool.connect();
     try {
       let query = this.sqlManager.getQuery('updateSynchronizationRecords');
-      if (fileSynchronization.deviceId) {
-        query += ' AND device_id = $5';
-        dataLogger.debug(query);
-        await client.query(query, [
-          fileSynchronization.timestamp,
-          fileSynchronization.userFileId,
-          fileSynchronization.isSynchronized,
-          fileSynchronization.wasChanged,
-          fileSynchronization.deviceId,
-        ]);
-      }
-      dataLogger.debug(query);
-      await client.query(query, [
+      const parameters = [
         fileSynchronization.timestamp,
         fileSynchronization.userFileId,
         fileSynchronization.isSynchronized,
-        fileSynchronization.wasChanged,
-      ]);
+      ];
+      if (fileSynchronization.wasChanged) {
+        query += ' AND was_changed = $' + (parameters.length + 1);
+        parameters.push(fileSynchronization.wasChanged);
+      }
+      if (fileSynchronization.deviceId) {
+        query += ' AND device_id = $' + (parameters.length + 1);
+        parameters.push(fileSynchronization.deviceId);
+      }
+      dataLogger.debug(query);
+      await client.query(query, parameters);
     } catch (err) {
       throw new Error(`FilesRepository.updateSynchronizationRecords: ${err}`);
     } finally {

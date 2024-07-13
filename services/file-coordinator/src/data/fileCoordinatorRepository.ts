@@ -54,7 +54,7 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     }
   };
 
-  public getTagMapping = async (
+  public getTagMappings = async (
     fileId: string,
     fixed: boolean,
   ): Promise<TagMappingDTO[]> => {

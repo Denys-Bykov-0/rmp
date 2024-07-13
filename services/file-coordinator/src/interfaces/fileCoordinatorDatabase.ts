@@ -11,7 +11,7 @@ abstract class FileCoordinatorDatabase {
     fileSynchronization: UpdateFileSynchronizationDTO,
   ) => Promise<void>;
   public abstract getTagsByFileId: (id: string) => Promise<TagDTO[]>;
-  public abstract getTagMapping: (
+  public abstract getTagMappings: (
     fileId: string,
     fixed: boolean,
   ) => Promise<TagMappingDTO[]>;

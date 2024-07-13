@@ -68,7 +68,7 @@ class FileCoordinatorWorker {
       return;
     }
 
-    const tagMappings = await this.db.getTagMapping(fileId, false);
+    const tagMappings = await this.db.getTagMappings(fileId, false);
 
     for (const tagMapping of tagMappings) {
       const tagMappingPriority = await this.db.getTagMappingPriority(
@@ -213,48 +213,40 @@ class FileCoordinatorWorker {
         TagDTO.allFromOneSource('0', file.id, true, sourceId, Status.Created),
       );
       await this.requestFileProcessing(file);
-
-      const userPlaylists =
-        await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
-
-      userPlaylists!.forEach(async (userPlaylist) => {
-        const userPlaylistFile = await this.playlistDb.getUserPlaylistFile(
-          file!.id,
-          userPlaylist.userId,
-          playlistId,
-        );
-        if (!userPlaylistFile) {
-          await this.playlistDb.insertUserPlaylistFile({
-            fileId: file!.id,
-            playlistId: playlistId,
-            missingFromRemote: true,
-          });
-        }
-        const userFile = await this.db.getUserFile(
-          userPlaylist.userId,
-          file!.id,
-        );
-        if (!userFile) {
-          await this.db.insertUserFile(userPlaylist.userId, file!.id);
-        }
-        await this.tagDb.insertTagMapping(
-          TagMappingDTO.allFromOneSource(
-            userPlaylist.userId,
-            file!.id,
-            sourceId,
-          ),
-        );
-
-        const devices = await this.db.getDeviceIdsByUser(userPlaylist.userId);
-
-        devices.forEach(async (deviceId) => {
-          await this.db.insertSynchronizationRecordsByDevice(
-            userFile!.id,
-            deviceId,
-          );
-        });
-      });
     }
+    const userPlaylists =
+      await this.playlistDb.getUserPlaylistsByPlaylistId(playlistId);
+
+    userPlaylists!.forEach(async (userPlaylist) => {
+      const userPlaylistFile = await this.playlistDb.getUserPlaylistFile(
+        file!.id,
+        userPlaylist.userId,
+        playlistId,
+      );
+      if (!userPlaylistFile) {
+        await this.playlistDb.insertUserPlaylistFile({
+          fileId: file!.id,
+          playlistId: playlistId,
+          missingFromRemote: true,
+        });
+      }
+      const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
+      if (!userFile) {
+        await this.db.insertUserFile(userPlaylist.userId, file!.id);
+      }
+      await this.tagDb.insertTagMapping(
+        TagMappingDTO.allFromOneSource(userPlaylist.userId, file!.id, sourceId),
+      );
+
+      const devices = await this.db.getDeviceIdsByUser(userPlaylist.userId);
+
+      devices.forEach(async (deviceId) => {
+        await this.db.insertSynchronizationRecordsByDevice(
+          userFile!.id,
+          deviceId,
+        );
+      });
+    });
   };
 
   public requestFileProcessing = async (file: FileDTO): Promise<void> => {
@@ -281,22 +273,21 @@ class FileCoordinatorWorker {
     }
 
     userPlaylists.forEach(async (userPlaylist) => {
-      const taggedUserPlaylistFile =
+      const currentFiles =
         await this.playlistDb.getUserPlaylistFilesAndFileByPlaylistId(
           userPlaylist.id,
         );
 
-      const newFiles = files.filter(
-        (file) =>
-          !taggedUserPlaylistFile.some((upff) => upff.file.sourceUrl === file),
+      const newFiles = currentFiles.filter((upff) =>
+        files.includes(upff.file.sourceUrl),
       );
 
-      const removedFiles = taggedUserPlaylistFile.filter(
+      const removedFiles = currentFiles.filter(
         (upff) => !files.includes(upff.file.sourceUrl),
       );
 
-      newFiles.forEach(async (file) => {
-        await this.downloadFile(playlistId, file);
+      newFiles.forEach(async (currentFile) => {
+        await this.downloadFile(playlistId, currentFile.file.sourceUrl);
       });
 
       removedFiles.forEach(async (upff) => {
@@ -305,7 +296,6 @@ class FileCoordinatorWorker {
           timestamp: new Date().toISOString(),
           userFileId: upff.file.id,
           isSynchronized: false,
-          wasChanged: true,
         });
         await this.db.updateFileSynchronization(fileSynchronization);
       });
