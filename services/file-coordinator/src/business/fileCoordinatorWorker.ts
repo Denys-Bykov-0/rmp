@@ -223,13 +223,15 @@ class FileCoordinatorWorker {
         userPlaylist.userId,
         playlistId,
       );
-      if (!userPlaylistFile) {
-        await this.playlistDb.insertUserPlaylistFile({
-          fileId: file!.id,
-          playlistId: userPlaylist.playlistId,
-          missingFromRemote: false,
-        });
+      if (userPlaylistFile) {
+        return;
       }
+
+      await this.playlistDb.insertUserPlaylistFile({
+        fileId: file!.id,
+        playlistId: userPlaylist.playlistId,
+        missingFromRemote: false,
+      });
       const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
       if (!userFile) {
         await this.db.insertUserFile(userPlaylist.userId, file!.id);
