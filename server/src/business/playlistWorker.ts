@@ -1,4 +1,5 @@
 import { Status } from '@src/dtos/statusDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { Playlist } from '@src/entities/playlists';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { iFilePlugin } from '@src/interfaces/iFilePlugin';
@@ -74,28 +75,29 @@ class PlaylistWorker {
     userId: string,
     playlistId: string
   ): Promise<void> => {
-    const userPlaylistByCurrentUser = await this.db.getUserPlaylistByUserId(
+    const userPlaylist = await this.db.getUserPlaylistByUserId(
       userId,
       playlistId
     );
     const userPlaylistFiles = await this.db.getUserPlaylistFilesByPlaylistId(
-      userPlaylistByCurrentUser.id
+      userPlaylist.id
     );
 
     userPlaylistFiles.forEach(async (file) => {
       await this.db.deleteUserPlaylistsFile(file.id, userId, [playlistId]);
-      const opts = {
+      const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
         timestamp: new Date().toISOString(),
         userFileId: file.fileId,
         isSynchronized: false,
-        wasChanged: true,
-      };
-      await this.fileDb.updateSynchronizationRecords(opts);
+      });
+      await this.fileDb.updateSynchronizationRecords(fileSynchronization);
     });
-    await this.db.deleteUserPlaylist(userId, userPlaylistByCurrentUser.id);
-    const userPlaylist = await this.db.getUserPlaylistById(playlistId);
-    if (userPlaylist.length !== 0) {
-      await this.db.deletePlaylist(playlistId);
+    await this.db.deleteUserPlaylist(userId, userPlaylist.id);
+    const playlists = await this.db.getUserPlaylistById(playlistId);
+    if (playlists.length !== 0) {
+      playlists.forEach(async (playlist) => {
+        await this.db.deletePlaylist(playlist.id);
+      });
     }
   };
 }

@@ -310,7 +310,9 @@ export class FileRepository implements iFileDatabase {
     }
   };
 
-  public updateSynchronizationRecords = async (fileSynchronization: UpdateFileSynchronizationDTO): Promise<void> => {
+  public updateSynchronizationRecords = async (
+    fileSynchronization: UpdateFileSynchronizationDTO
+  ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       let query = this.sqlManager.getQuery('updateSynchronizationRecords');
