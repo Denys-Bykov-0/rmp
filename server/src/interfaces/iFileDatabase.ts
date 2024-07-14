@@ -1,6 +1,7 @@
 import { FileDTO } from '@src/dtos/fileDTO';
 import { FileSynchronizationDTO } from '@src/dtos/fileSynchronizationDTO';
 import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { UserDTO } from '@src/dtos/userDTO';
 import { UserFileDTO } from '@src/dtos/userFileDTO';
 
@@ -40,19 +41,9 @@ export abstract class iFileDatabase {
     deviceId: string,
     userFileId: string
   ) => Promise<void>;
-  public abstract updateSynchronizationRecords: ({
-    timestamp,
-    userFileId,
-    isSynchronized,
-    wasChanged,
-    deviceId,
-  }: {
-    timestamp: string;
-    userFileId: string;
-    isSynchronized: boolean;
-    wasChanged: boolean;
-    deviceId?: string;
-  }) => Promise<void>;
+  public abstract updateSynchronizationRecords: (
+    fileSynchronization: UpdateFileSynchronizationDTO
+  ) => Promise<void>;
   public abstract getUserFiles: (
     userId: string,
     fileId: string

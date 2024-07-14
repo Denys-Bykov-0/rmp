@@ -3,6 +3,7 @@ import pg from 'pg';
 import { FileDTO } from '@src/dtos/fileDTO';
 import { FileSynchronizationDTO } from '@src/dtos/fileSynchronizationDTO';
 import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { UserDTO } from '@src/dtos/userDTO';
 import { UserFileDTO } from '@src/dtos/userFileDTO';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
@@ -309,40 +310,25 @@ export class FileRepository implements iFileDatabase {
     }
   };
 
-  public updateSynchronizationRecords = async ({
-    timestamp,
-    userFileId,
-    isSynchronized,
-    wasChanged,
-    deviceId,
-  }: {
-    timestamp: string;
-    userFileId: string;
-    isSynchronized: boolean;
-    wasChanged: boolean;
-    deviceId?: string;
-  }): Promise<void> => {
+  public updateSynchronizationRecords = async (fileSynchronization: UpdateFileSynchronizationDTO): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       let query = this.sqlManager.getQuery('updateSynchronizationRecords');
-      if (deviceId) {
-        query += ' AND device_id = $5';
-        dataLogger.debug(query);
-        await client.query(query, [
-          timestamp,
-          userFileId,
-          isSynchronized,
-          wasChanged,
-          deviceId,
-        ]);
+      const parameters = [
+        fileSynchronization.timestamp,
+        fileSynchronization.userFileId,
+        fileSynchronization.isSynchronized,
+      ];
+      if (fileSynchronization.wasChanged) {
+        query += ' AND was_changed = $' + (parameters.length + 1);
+        parameters.push(fileSynchronization.wasChanged);
+      }
+      if (fileSynchronization.deviceId) {
+        query += ' AND device_id = $' + (parameters.length + 1);
+        parameters.push(fileSynchronization.deviceId);
       }
       dataLogger.debug(query);
-      await client.query(query, [
-        timestamp,
-        userFileId,
-        isSynchronized,
-        wasChanged,
-      ]);
+      await client.query(query, parameters);
     } catch (err) {
       throw new Error(`FilesRepository.updateSynchronizationRecords: ${err}`);
     } finally {

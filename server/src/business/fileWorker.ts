@@ -8,6 +8,7 @@ import { FileDTO } from '@src/dtos/fileDTO';
 import { Status } from '@src/dtos/statusDTO';
 import { TagDTO } from '@src/dtos/tagDTO';
 import { TagMappingDTO } from '@src/dtos/tagMappingDTO';
+import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { File } from '@src/entities/file';
 import { FileData } from '@src/entities/fileData';
 import { GetFileResponse } from '@src/entities/getFileResponse';
@@ -207,13 +208,13 @@ export class FileWorker {
     );
 
     if (userPlaylistFiles) {
-      const opts = {
+      const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
         timestamp: new Date().toISOString(),
         userFileId: userFile!.id,
         isSynchronized: true,
         wasChanged: false,
-      };
-      await this.db.updateSynchronizationRecords(opts);
+      });
+      await this.db.updateSynchronizationRecords(fileSynchronization);
       return;
     }
 
@@ -289,13 +290,13 @@ export class FileWorker {
       });
     }
     await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
-    const opts = {
+    const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
       timestamp: new Date().toISOString(),
-      userFileId: userFile!.id,
+      userFileId: userFile.id,
       isSynchronized: false,
       wasChanged: true,
-    };
-    await this.db.updateSynchronizationRecords(opts);
+    });
+    await this.db.updateSynchronizationRecords(fileSynchronization);
     return;
   };
 }

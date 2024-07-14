@@ -20,7 +20,7 @@ class PlaylistRepository implements PlaylistDatabase {
 
   public getUserPlaylistsByPlaylistId = async (
     playlistId: string,
-  ): Promise<UserPlaylistDTO[] | null> => {
+  ): Promise<UserPlaylistDTO[]> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getUserPlaylistsByPlaylistId');
@@ -29,7 +29,7 @@ class PlaylistRepository implements PlaylistDatabase {
       const { rows } = queryResult;
       return rows.length > 0
         ? rows.map((row) => UserPlaylistDTO.fromJSON(row))
-        : null;
+        : [];
     } catch (err) {
       this.logger.error(err);
       throw err;

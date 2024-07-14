@@ -5,6 +5,7 @@ import { FileDTO } from '@dtos/fileDTO';
 import { TagDTO } from '@dtos/tagDTO';
 import { TagMappingDTO } from '@dtos/tagMappingDTO';
 import { TagMappingPriorityDTO } from '@dtos/tagMappingPriorityDTO';
+import { UpdateFileSynchronizationDTO } from '@dtos/updateFileSynchronizationDTO';
 import { UserFileDTO } from '@dtos/userFileDTO';
 import { FileCoordinatorDatabase } from '@interfaces/fileCoordinatorDatabase';
 
@@ -32,24 +33,18 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     }
   };
 
-  public updateFileSynchronization = async ({
-    userFileId,
-    isSynchronized,
-    wasChanged,
-  }: {
-    userFileId: string;
-    isSynchronized: boolean;
-    wasChanged: boolean;
-  }): Promise<void> => {
+  public updateFileSynchronization = async (
+    fileSynchronization: UpdateFileSynchronizationDTO,
+  ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('updateFileSynchronization');
       this.logger.debug(`Query: ${query}`);
       await client.query(query, [
-        isSynchronized,
-        wasChanged,
-        new Date().toISOString(),
-        userFileId,
+        fileSynchronization.isSynchronized,
+        fileSynchronization.wasChanged,
+        fileSynchronization.timestamp,
+        fileSynchronization.userFileId,
       ]);
     } catch (error) {
       this.logger.error(`Error updating file synchronization: ${error}`);
@@ -59,7 +54,7 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     }
   };
 
-  public getTagMapping = async (
+  public getTagMappings = async (
     fileId: string,
     fixed: boolean,
   ): Promise<TagMappingDTO[]> => {
@@ -250,10 +245,10 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     }
   };
 
-  public getDevicesIdByUser = async (userId: string): Promise<string[]> => {
+  public getDeviceIdsByUser = async (userId: string): Promise<string[]> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.sqlManager.getQuery('getDevicesIdByUser');
+      const query = this.sqlManager.getQuery('getDeviceIdsByUser');
       this.logger.debug(`Query: ${query}`);
       const queryResult = await client.query(query, [userId]);
       return queryResult.rows.map((row) => row.id);
