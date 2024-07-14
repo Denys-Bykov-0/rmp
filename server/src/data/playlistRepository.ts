@@ -243,15 +243,12 @@ class PlaylistRepository implements iPlaylistDatabase {
     }
   };
 
-  public deleteUserPlaylist = async (
-    userId: string,
-    playlistId: string
-  ): Promise<void> => {
+  public deleteUserPlaylist = async (playlistId: string): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('deleteUserPlaylist');
       dataLogger.debug(query);
-      await client.query(query, [userId, playlistId]);
+      await client.query(query, [playlistId]);
     } catch (err) {
       dataLogger.error(err);
       throw err;
@@ -289,6 +286,20 @@ class PlaylistRepository implements iPlaylistDatabase {
       const result = await client.query(query, [id]);
       const { rows } = result;
       return rows.map((row) => UserPlaylistDTO.fromJSON(row));
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public deletePlaylists = async (playlistId: string): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deletePlaylists');
+      dataLogger.debug(query);
+      await client.query(query, [playlistId]);
     } catch (err) {
       dataLogger.error(err);
       throw err;
