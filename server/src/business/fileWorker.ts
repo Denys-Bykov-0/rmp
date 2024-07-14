@@ -292,7 +292,7 @@ export class FileWorker {
     await this.playlistDb.deleteUserPlaylistsFile(fileId, userId, playlistIds);
     const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
       timestamp: new Date().toISOString(),
-      userFileId: userFile!.id,
+      userFileId: userFile.id,
       isSynchronized: false,
       wasChanged: true,
     });

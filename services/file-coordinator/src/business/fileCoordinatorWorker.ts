@@ -92,7 +92,6 @@ class FileCoordinatorWorker {
         timestamp: new Date().toISOString(),
         userFileId: userFileId,
         isSynchronized: false,
-        wasChanged: true,
       });
 
       await this.db.updateFileSynchronization(fileSynchronization);

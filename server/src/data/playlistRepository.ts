@@ -243,15 +243,63 @@ class PlaylistRepository implements iPlaylistDatabase {
     }
   };
 
-  public deleteUserPlaylist = async (
-    userId: string,
-    playlistId: string
-  ): Promise<void> => {
+  public deleteUserPlaylist = async (playlistId: string): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('deleteUserPlaylist');
       dataLogger.debug(query);
-      await client.query(query, [userId, playlistId]);
+      await client.query(query, [playlistId]);
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public getUserPlaylistFilesByPlaylistId = async (
+    playlistId: string
+  ): Promise<UserPlaylistFileDTO[]> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery(
+        'getUserPlaylistFilesByPlaylistId'
+      );
+      dataLogger.debug(query);
+      const result = await client.query(query, [playlistId]);
+      return result.rows.map((row) => UserPlaylistFileDTO.fromJSON(row));
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public getUserPlaylistById = async (
+    id: string
+  ): Promise<UserPlaylistDTO[]> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('getUserPlaylistById');
+      dataLogger.debug(query);
+      const result = await client.query(query, [id]);
+      const { rows } = result;
+      return rows.map((row) => UserPlaylistDTO.fromJSON(row));
+    } catch (err) {
+      dataLogger.error(err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  };
+
+  public deletePlaylists = async (playlistId: string): Promise<void> => {
+    const client = await this.dbPool.connect();
+    try {
+      const query = this.sqlManager.getQuery('deletePlaylists');
+      dataLogger.debug(query);
+      await client.query(query, [playlistId]);
     } catch (err) {
       dataLogger.error(err);
       throw err;
