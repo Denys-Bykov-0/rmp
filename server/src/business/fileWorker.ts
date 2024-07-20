@@ -71,6 +71,20 @@ export class FileWorker {
       await this.requestFileProcessing(file);
     }
 
+    if (file.status !== Status.Completed) {
+      if (file.status === Status.Error) {
+        throw new ProcessingError({
+          message: 'File preparation failed',
+          errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
+        });
+      } else {
+        throw new ProcessingError({
+          message: 'File is not ready yet',
+          errorCode: ProcessingErrorCode.FILE_NOT_READY,
+        });
+      }
+    }
+
     const userPlaylistId = await this.playlistDb.getDefaultUserPlaylistId(
       user.id
     );
