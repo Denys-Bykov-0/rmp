@@ -55,10 +55,7 @@ export class FileWorker {
     this.fileTagger = fileTagger;
   }
 
-  public downloadFile = async (
-    sourceUrl: string,
-    user: User
-  ): Promise<File> => {
+  public addFile = async (sourceUrl: string, user: User): Promise<File> => {
     const sourceId = this.filePlugin.getSource(sourceUrl);
     const normalizedUrl = this.filePlugin.normalizeUrl(sourceUrl);
 
@@ -72,20 +69,6 @@ export class FileWorker {
         TagDTO.allFromOneSource('0', file.id, true, sourceId, Status.Created)
       );
       await this.requestFileProcessing(file);
-    }
-
-    if (file.status !== Status.Completed) {
-      if (file.status === Status.Error) {
-        throw new ProcessingError({
-          message: 'File preparation failed',
-          errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
-        });
-      } else {
-        throw new ProcessingError({
-          message: 'File is not ready yet',
-          errorCode: ProcessingErrorCode.FILE_NOT_READY,
-        });
-      }
     }
 
     const userPlaylistId = await this.playlistDb.getDefaultUserPlaylistId(
@@ -259,16 +242,30 @@ export class FileWorker {
     }
   };
 
-  public tagFile = async (
+  public downloadFile = async (
     fileId: string,
     userId: string
   ): Promise<FileData> => {
     const file = await this.db.getFile(fileId);
 
-    if (file === null || file!.status !== Status.Completed) {
+    if (file == null) {
       throw new ProcessingError({
         message: 'File not found or not processed',
       });
+    }
+
+    if (file.status !== Status.Completed) {
+      if (file.status === Status.Error) {
+        throw new ProcessingError({
+          message: 'File preparation failed',
+          errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
+        });
+      } else {
+        throw new ProcessingError({
+          message: 'File is not ready yet',
+          errorCode: ProcessingErrorCode.FILE_NOT_READY,
+        });
+      }
     }
 
     const tag = await this.tagDb.getMappedTag(fileId, userId);
