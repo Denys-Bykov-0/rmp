@@ -74,6 +74,20 @@ export class FileWorker {
       await this.requestFileProcessing(file);
     }
 
+    if (file.status !== Status.Completed) {
+      if (file.status === Status.Error) {
+        throw new ProcessingError({
+          message: 'File preparation failed',
+          errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
+        });
+      } else {
+        throw new ProcessingError({
+          message: 'File is not ready yet',
+          errorCode: ProcessingErrorCode.FILE_NOT_READY,
+        });
+      }
+    }
+
     const userPlaylistId = await this.playlistDb.getDefaultUserPlaylistId(
       user.id
     );
@@ -110,7 +124,7 @@ export class FileWorker {
 
   public requestFileProcessing = async (file: FileDTO): Promise<void> => {
     const source = await this.sourceDb.getSource(file.source);
-    await this.filePlugin.downloadFile(file, source!.description);
+    this.filePlugin.downloadFile(file, source!.description);
     await this.tagPlugin.tagFile(file, source!.description);
   };
 
@@ -150,20 +164,6 @@ export class FileWorker {
         message: 'File not found',
         errorCode: ProcessingErrorCode.FILE_NOT_FOUND,
       });
-    }
-
-    if (taggedFile.status !== Status.Completed) {
-      if (taggedFile.status === Status.Error) {
-        throw new ProcessingError({
-          message: 'File preparation failed',
-          errorCode: ProcessingErrorCode.FILE_PREPARATION_FAILED,
-        });
-      } else {
-        throw new ProcessingError({
-          message: 'File is not ready yet',
-          errorCode: ProcessingErrorCode.FILE_NOT_READY,
-        });
-      }
     }
 
     for (const variation of expand) {
