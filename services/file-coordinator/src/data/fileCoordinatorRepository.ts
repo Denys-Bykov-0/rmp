@@ -60,7 +60,7 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
   ): Promise<TagMappingDTO[]> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.sqlManager.getQuery('getTagMapping');
+      const query = this.sqlManager.getQuery('getTagMappings');
       this.logger.debug(`Query: ${query}`);
       const { rows } = await client.query(query, [fileId, fixed]);
       return rows.map((row) => TagMappingDTO.fromJSON(row));
