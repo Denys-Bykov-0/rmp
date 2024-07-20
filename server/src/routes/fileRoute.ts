@@ -43,7 +43,7 @@ export class FileRoute extends BaseRoute {
       this.config.appDebug
         ? userManagementMiddleware([GENERAL, DEBUG], userWorker, this.config)
         : userManagementMiddleware([GENERAL], userWorker, this.config),
-      controller.downloadFileBySource
+      controller.addFile
     );
 
     this.app.get(
@@ -79,7 +79,7 @@ export class FileRoute extends BaseRoute {
       this.config.appDebug
         ? userManagementMiddleware([GENERAL, DEBUG], userWorker, this.config)
         : userManagementMiddleware([GENERAL], userWorker, this.config),
-      controller.tagFile
+      controller.downloadFile
     );
 
     this.app.delete(

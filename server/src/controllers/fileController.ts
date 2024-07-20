@@ -36,7 +36,7 @@ class FileController extends BaseController {
     );
   };
 
-  public downloadFileBySource = async (
+  public addFile = async (
     request: Express.Request,
     response: Express.Response,
     next: Express.NextFunction
@@ -45,7 +45,7 @@ class FileController extends BaseController {
       const { url, user } = request.body;
       const fileWorker = this.buildFileWorker();
 
-      const result = await fileWorker.downloadFile(url, user);
+      const result = await fileWorker.addFile(url, user);
       response.status(200).json(result!);
     } catch (error) {
       next(error);
@@ -174,7 +174,7 @@ class FileController extends BaseController {
     }
   };
 
-  public tagFile = async (
+  public downloadFile = async (
     request: Express.Request,
     response: Express.Response,
     next: Express.NextFunction
@@ -184,7 +184,7 @@ class FileController extends BaseController {
       const { fileId } = request.params;
 
       const fileWorker = this.buildFileWorker();
-      const result = await fileWorker.tagFile(fileId, user.id);
+      const result = await fileWorker.downloadFile(fileId, user.id);
       response.writeHead(200, {
         'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename=${result.name}`,
