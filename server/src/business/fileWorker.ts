@@ -59,8 +59,8 @@ export class FileWorker {
     sourceUrl: string,
     user: User
   ): Promise<File> => {
-    const sourceId = await this.filePlugin.getSource(sourceUrl);
-    const normalizedUrl = await this.filePlugin.normalizeUrl(sourceUrl);
+    const sourceId = this.filePlugin.getSource(sourceUrl);
+    const normalizedUrl = this.filePlugin.normalizeUrl(sourceUrl);
 
     let file = await this.db.getFileByUrl(normalizedUrl);
 
