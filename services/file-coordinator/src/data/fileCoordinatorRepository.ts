@@ -38,14 +38,21 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
   ): Promise<void> => {
     const client = await this.dbPool.connect();
     try {
-      const query = this.sqlManager.getQuery('updateFileSynchronization');
-      this.logger.debug(`Query: ${query}`);
-      await client.query(query, [
-        fileSynchronization.isSynchronized,
-        fileSynchronization.wasChanged,
+      let query = this.sqlManager.getQuery('updateFileSynchronization');
+      const parameters = [
         fileSynchronization.timestamp,
         fileSynchronization.userFileId,
-      ]);
+      ];
+      if (fileSynchronization.isSynchronized) {
+        query = query + ` AND is_synchronized = ${parameters.length + 1}`;
+        parameters.push(fileSynchronization.isSynchronized.toString());
+      }
+      if (fileSynchronization.wasChanged) {
+        query = query + ` AND was_changed = ${parameters.length + 1}`;
+        parameters.push(fileSynchronization.wasChanged.toString());
+      }
+      this.logger.debug(`Query: ${query}`);
+      await client.query(query, parameters);
     } catch (error) {
       this.logger.error(`Error updating file synchronization: ${error}`);
       throw new Error(`Error updating file synchronization: ${error}`);

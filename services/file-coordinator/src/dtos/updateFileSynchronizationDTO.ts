@@ -2,7 +2,7 @@ class UpdateFileSynchronizationDTO {
   constructor(
     readonly timestamp: string,
     readonly userFileId: string,
-    readonly isSynchronized: boolean,
+    readonly isSynchronized?: boolean,
     readonly wasChanged?: boolean,
     readonly deviceId?: string,
   ) {}
