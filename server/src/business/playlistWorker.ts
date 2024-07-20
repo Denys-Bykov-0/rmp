@@ -40,7 +40,7 @@ class PlaylistWorker {
   ): Promise<Playlist> => {
     let normalizedUrl: string;
     try {
-      normalizedUrl = this.filePlugin.normalizeUrlPlaylist(url);
+      normalizedUrl = this.filePlugin.normalizePlaylistUrl(url);
     } catch (error) {
       throw new ProcessingError({
         message: 'Invalid URL',
