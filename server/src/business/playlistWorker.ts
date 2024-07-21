@@ -85,7 +85,7 @@ class PlaylistWorker {
       userPlaylist.id
     );
 
-    userPlaylistFiles.forEach(async (file) => {
+    for (const file of userPlaylistFiles) {
       await this.db.deleteUserPlaylistsFile(file.fileId, userId, [playlistId]);
       const userFile = await this.fileDb.getUserFile(userId, file.fileId);
       const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
@@ -94,7 +94,7 @@ class PlaylistWorker {
         isSynchronized: false,
       });
       await this.fileDb.updateSynchronizationRecords(fileSynchronization);
-    });
+    }
     await this.db.deleteUserPlaylist(userPlaylist.playlistId);
     const playlists = await this.db.getUserPlaylistById(playlistId);
     if (playlists.length !== 0) {

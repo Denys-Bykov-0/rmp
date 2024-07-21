@@ -8,5 +8,5 @@ WHERE
       user_playlists
     WHERE
       user_id = $2
-      AND playlist_id IN ($3)
+      AND playlist_id = ANY ($3)
   );

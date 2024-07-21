@@ -2,7 +2,6 @@ import { randomUUID as randomUUIDV4 } from 'crypto';
 import { Logger } from 'log4js';
 import { FileDTO } from '@dtos/fileDTO';
 import { TagDTO } from '@dtos/tagDTO';
-import { TaggedUserPlaylistFileDTO } from '@dtos/taggedUserPlaylistFileDTO';
 import { TagMappingDTO } from '@dtos/tagMappingDTO';
 import { TagMappingPriorityDTO } from '@dtos/tagMappingPriorityDTO';
 import { UpdateFileSynchronizationDTO } from '@dtos/updateFileSynchronizationDTO';
@@ -280,18 +279,13 @@ class FileCoordinatorWorker {
           userPlaylist.id,
         );
 
-      const newFiles: string[] = [];
-      const removedFiles: TaggedUserPlaylistFileDTO[] = [];
+      const newFiles = files.filter(
+        (f) => !currentFiles.map((cf) => cf.file.sourceUrl).includes(f),
+      );
 
-      files.forEach((file) => {
-        if (
-          !currentFiles.some(
-            (currentFile) => currentFile.file.sourceUrl === file,
-          )
-        ) {
-          newFiles.push(file);
-        }
-      });
+      const removedFiles = currentFiles.filter(
+        (cf) => !files.includes(cf.file.sourceUrl),
+      );
 
       newFiles.forEach(async (currentFile) => {
         await this.downloadFile(playlistId, currentFile);

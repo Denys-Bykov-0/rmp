@@ -25,7 +25,7 @@ const errorHandlingMiddleware = async (
   if (error instanceof Error) {
     serverLogger.error(`Unhandled error: ${error}`);
     return response.status(500).json({
-      message: 'Internal Server Error',
+      message: error.message,
       code: -1,
     });
   }

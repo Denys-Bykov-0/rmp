@@ -156,6 +156,9 @@ class PlaylistRepository implements iPlaylistDatabase {
       const query = this.sqlManager.getQuery('getUserPlaylistByUserId');
       dataLogger.debug(query);
       const result = await client.query(query, [userId, playlistId]);
+      if (result.rows.length === 0) {
+        throw new Error('Playlist not found');
+      }
       return UserPlaylistDTO.fromJSON(result.rows[0]);
     } catch (err) {
       dataLogger.error(err);
@@ -221,7 +224,7 @@ class PlaylistRepository implements iPlaylistDatabase {
     try {
       const query = this.sqlManager.getQuery('deleteUserPlaylistsFile');
       dataLogger.debug(query);
-      await client.query(query, [fileId, userId, playlistIds.join(',')]);
+      await client.query(query, [fileId, userId, playlistIds]);
     } catch (err) {
       dataLogger.error(err);
       throw err;
