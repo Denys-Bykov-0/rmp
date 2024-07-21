@@ -57,11 +57,13 @@ class PlaylistWorker {
       }
     }
 
-    const sourceId = await this.filePlugin.getSource(normalizedUrl);
+    const sourceId = this.filePlugin.getSource(normalizedUrl);
     const result = await this.db.insertPlaylist(
       normalizedUrl,
       sourceId,
-      Status.Created
+      new Date().toISOString(),
+      Status.Created,
+      new Date().toISOString()
     );
     const source = await this.sourceDb.getSource(sourceId);
     await this.playlistPlugin.parsePlaylist(result.id, source!.description);

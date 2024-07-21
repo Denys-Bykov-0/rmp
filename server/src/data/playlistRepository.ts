@@ -168,7 +168,9 @@ class PlaylistRepository implements iPlaylistDatabase {
   public insertPlaylist = async (
     url: string,
     sourceId: string,
-    status: Status
+    addedTs: string,
+    status: Status,
+    synchronizationTs: string
   ): Promise<PlaylistDTO> => {
     const client = await this.dbPool.connect();
     try {
@@ -177,8 +179,9 @@ class PlaylistRepository implements iPlaylistDatabase {
       const result = await client.query(query, [
         url,
         sourceId,
-        new Date().toISOString(),
+        addedTs,
         status,
+        synchronizationTs,
       ]);
       return PlaylistDTO.fromJSON(result.rows[0]);
     } catch (err) {
