@@ -50,7 +50,7 @@ class TaggedFileDTO {
   public sourceUrl: string;
   public isSynchronized: boolean;
   public tags: ShortTagsDTO | null;
-  public playlists: PlaylistDTO[] | null;
+  public playlists: string[] | null;
 
   constructor(
     id: string,
@@ -59,7 +59,7 @@ class TaggedFileDTO {
     sourceUrl: string,
     isSynchronized: boolean,
     tags: ShortTagsDTO | null,
-    playlists: PlaylistDTO[] | null
+    playlists: string[] | null
   ) {
     this.id = id;
     this.source = source;
@@ -72,7 +72,7 @@ class TaggedFileDTO {
 
   public static fromJSON = (json: JSON.JSONObject): TaggedFileDTO => {
     const playlists = json.playlists.map((playlist: JSON.JSONObject) => {
-      return PlaylistDTO.fromJSON(playlist);
+      return PlaylistDTO.fromJSON(playlist).id.toString();
     });
     return new TaggedFileDTO(
       json.file_id.toString(),
