@@ -2,6 +2,7 @@ import { randomUUID as randomUUIDV4 } from 'crypto';
 import { Logger } from 'log4js';
 import { FileDTO } from '@dtos/fileDTO';
 import { TagDTO } from '@dtos/tagDTO';
+import { TaggedUserPlaylistFileDTO } from '@dtos/taggedUserPlaylistFileDTO';
 import { TagMappingDTO } from '@dtos/tagMappingDTO';
 import { TagMappingPriorityDTO } from '@dtos/tagMappingPriorityDTO';
 import { UpdateFileSynchronizationDTO } from '@dtos/updateFileSynchronizationDTO';
@@ -193,8 +194,8 @@ class FileCoordinatorWorker {
     playlistId: string,
     url: string,
   ): Promise<void> => {
-    const sourceId = await this.filePlugin.getSource(url);
-    const normalizedUrl = await this.filePlugin.normalizeUrl(url);
+    const sourceId = this.filePlugin.getSource(url);
+    const normalizedUrl = this.filePlugin.normalizeUrl(url);
 
     let file = await this.db.getFileByUrl(normalizedUrl);
 
@@ -226,15 +227,14 @@ class FileCoordinatorWorker {
       if (userPlaylistFile) {
         return;
       }
-
       await this.playlistDb.insertUserPlaylistFile({
         fileId: file!.id,
-        playlistId: userPlaylist.playlistId,
+        playlistId: userPlaylist.id,
         missingFromRemote: false,
       });
-      const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
+      let userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
       if (!userFile) {
-        await this.db.insertUserFile(userPlaylist.userId, file!.id);
+        userFile = await this.db.insertUserFile(userPlaylist.userId, file!.id);
       }
       await this.tagDb.insertTagMapping(
         TagMappingDTO.allFromOneSource(userPlaylist.userId, file!.id, sourceId),
@@ -280,16 +280,21 @@ class FileCoordinatorWorker {
           userPlaylist.id,
         );
 
-      const newFiles = currentFiles.filter((upff) =>
-        files.includes(upff.file.sourceUrl),
-      );
+      const newFiles: string[] = [];
+      const removedFiles: TaggedUserPlaylistFileDTO[] = [];
 
-      const removedFiles = currentFiles.filter(
-        (upff) => !files.includes(upff.file.sourceUrl),
-      );
+      files.forEach((file) => {
+        if (
+          !currentFiles.some(
+            (currentFile) => currentFile.file.sourceUrl === file,
+          )
+        ) {
+          newFiles.push(file);
+        }
+      });
 
       newFiles.forEach(async (currentFile) => {
-        await this.downloadFile(playlistId, currentFile.file.sourceUrl);
+        await this.downloadFile(playlistId, currentFile);
       });
 
       removedFiles.forEach(async (upff) => {

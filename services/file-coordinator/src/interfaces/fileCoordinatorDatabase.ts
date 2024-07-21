@@ -34,7 +34,7 @@ abstract class FileCoordinatorDatabase {
   public abstract getUserFile: (
     userId: string,
     fileId: string,
-  ) => Promise<UserFileDTO>;
+  ) => Promise<UserFileDTO | null>;
   public abstract insertUserFile: (
     userId: string,
     fileId: string,

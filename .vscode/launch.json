@@ -21,7 +21,7 @@
           "name": "Node.js: Attach (File-Coordinator)",
           "type": "node",
           "request": "attach",
-          "port": 9229,
+          "port": 9230,
           "restart": true,
           "localRoot": "${workspaceFolder}/services/file-coordinator",
         },
@@ -29,7 +29,7 @@
            "name": "Docker: Attach to Node (File-Coordinator)",
             "type": "node",
             "request": "attach",
-            "port": 9229,
+            "port": 9230,
             "restart": true,
             "remoteRoot": "/opt/upVibe",
             "localRoot": "${workspaceFolder}/services/file-coordinator"

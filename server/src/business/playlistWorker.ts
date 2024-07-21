@@ -80,26 +80,27 @@ class PlaylistWorker {
       userId,
       playlistId
     );
+
     const userPlaylistFiles = await this.db.getUserPlaylistFilesByPlaylistId(
       userPlaylist.id
     );
 
     userPlaylistFiles.forEach(async (file) => {
-      await this.db.deleteUserPlaylistsFile(file.id, userId, [playlistId]);
-      const userFileId = this.fileDb.getUserFile(userId, file.fileId);
+      await this.db.deleteUserPlaylistsFile(file.fileId, userId, [playlistId]);
+      const userFile = await this.fileDb.getUserFile(userId, file.fileId);
       const fileSynchronization = UpdateFileSynchronizationDTO.fromJSON({
         timestamp: new Date().toISOString(),
-        userFileId: userFileId,
+        userFileId: userFile?.id,
         isSynchronized: false,
       });
       await this.fileDb.updateSynchronizationRecords(fileSynchronization);
     });
-    await this.db.deleteUserPlaylist(userPlaylist.id);
+    await this.db.deleteUserPlaylist(userPlaylist.playlistId);
     const playlists = await this.db.getUserPlaylistById(playlistId);
     if (playlists.length !== 0) {
       return;
     }
-    await this.db.deletePlaylists(playlistId);
+    await this.db.deletePlaylist(playlistId);
   };
 }
 

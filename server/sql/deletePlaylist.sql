@@ -1,3 +1,3 @@
 DELETE FROM playlists
 WHERE
-  AND id = $1
+  id = $1
