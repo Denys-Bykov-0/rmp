@@ -1,13 +1,7 @@
 INSERT INTO
-  playlists (
-    source_url,
-    source_id,
-    added_ts,
-    status,
-    synchronization_ts
-  )
+  playlists (source_url, source_id, added_ts, status)
 VALUES
-  ($1, $2, $3, $4, $5)
+  ($1, $2, $3, $4)
 RETURNING
   id AS playlist_id,
   source_url AS playlist_source_url,

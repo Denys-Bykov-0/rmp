@@ -169,8 +169,7 @@ class PlaylistRepository implements iPlaylistDatabase {
     url: string,
     sourceId: string,
     addedTs: string,
-    status: Status,
-    synchronizationTs: string
+    status: Status
   ): Promise<PlaylistDTO> => {
     const client = await this.dbPool.connect();
     try {
@@ -181,7 +180,6 @@ class PlaylistRepository implements iPlaylistDatabase {
         sourceId,
         addedTs,
         status,
-        synchronizationTs,
       ]);
       return PlaylistDTO.fromJSON(result.rows[0]);
     } catch (err) {
