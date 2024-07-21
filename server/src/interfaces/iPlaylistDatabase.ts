@@ -32,7 +32,9 @@ export abstract class iPlaylistDatabase {
   public abstract insertPlaylist(
     url: string,
     sourceId: string,
-    status: Status
+    addedTs: string,
+    status: Status,
+    synchronizationTs: string
   ): Promise<PlaylistDTO>;
   public abstract insertUserPlaylist(
     userId: string,

@@ -29,9 +29,9 @@ class SourceController extends BaseController {
     next: Express.NextFunction
   ) => {
     try {
-      const tagWorker = this.buildWorker();
+      const sourceWorker = this.buildWorker();
 
-      const result = await tagWorker.getSources();
+      const result = await sourceWorker.getSources();
       return response.status(200).json(result);
     } catch (error) {
       next(error);
@@ -44,10 +44,10 @@ class SourceController extends BaseController {
     next: Express.NextFunction
   ) => {
     try {
-      const tagWorker = this.buildWorker();
+      const sourceWorker = this.buildWorker();
 
       const sourceId = request.params.sourceId;
-      const result = await tagWorker.getSourceLogo(sourceId);
+      const result = await sourceWorker.getSourceLogo(sourceId);
       return response.status(200).sendFile(result);
     } catch (error) {
       next(error);
