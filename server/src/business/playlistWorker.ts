@@ -62,8 +62,7 @@ class PlaylistWorker {
       normalizedUrl,
       sourceId,
       new Date().toISOString(),
-      Status.Created,
-      new Date().toISOString()
+      Status.Created
     );
     const source = await this.sourceDb.getSource(sourceId);
     await this.playlistPlugin.parsePlaylist(result.id, source!.description);
