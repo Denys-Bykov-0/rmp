@@ -1,4 +1,3 @@
-import { PlaylistDTO } from './playlistsDTO';
 import { SourceDTO } from './sourceDTO';
 
 class ShortTagsDTO {
@@ -51,6 +50,7 @@ class TaggedFileDTO {
   public isSynchronized: boolean;
   public tags: ShortTagsDTO | null;
   public playlists: string[] | null;
+  public missingRemote: boolean | null;
 
   constructor(
     id: string,
@@ -59,7 +59,8 @@ class TaggedFileDTO {
     sourceUrl: string,
     isSynchronized: boolean,
     tags: ShortTagsDTO | null,
-    playlists: string[] | null
+    playlists: string[] | null,
+    missingRemote: boolean | null
   ) {
     this.id = id;
     this.source = source;
@@ -68,12 +69,10 @@ class TaggedFileDTO {
     this.isSynchronized = isSynchronized;
     this.tags = tags;
     this.playlists = playlists;
+    this.missingRemote = missingRemote;
   }
 
   public static fromJSON = (json: JSON.JSONObject): TaggedFileDTO => {
-    const playlists = json.playlists.map((playlist: JSON.JSONObject) => {
-      return PlaylistDTO.fromJSON(playlist).id.toString();
-    });
     return new TaggedFileDTO(
       json.file_id.toString(),
       SourceDTO.fromJSON(json),
@@ -81,7 +80,8 @@ class TaggedFileDTO {
       json.file_source_url,
       json.is_synchronized,
       ShortTagsDTO.fromJSON(json),
-      playlists
+      json.playlists,
+      json.missing_from_remote
     );
   };
 }

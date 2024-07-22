@@ -62,13 +62,14 @@ export class FileRepository implements iFileDatabase {
     query: string,
     statuses: Array<string> | null,
     synchronized: boolean | null,
-    playlists: Array<string> | null
+    playlists: Array<string> | null,
+    missingRemote: boolean | null
   ): string => {
     let paramIndex = 3;
 
     const appendInClause = (
       query: string,
-      items: Array<string>,
+      items: Array<string | boolean>,
       paramName: string
     ): string => {
       if (items.length > 0) {
@@ -86,12 +87,15 @@ export class FileRepository implements iFileDatabase {
     }
 
     if (synchronized !== null) {
-      query += ` AND fs.is_synchronized = $${paramIndex}`;
-      paramIndex++;
+      query = appendInClause(query, [synchronized], 'fs.is_synchronized');
     }
 
     if (playlists !== null) {
       query = appendInClause(query, playlists, 'p.id');
+    }
+
+    if (missingRemote !== null) {
+      query = appendInClause(query, [missingRemote], 'upf.missing_from_remote');
     }
 
     return query;
@@ -102,7 +106,8 @@ export class FileRepository implements iFileDatabase {
     deviceId: string,
     statuses: Array<string> | null,
     synchronized: boolean | null,
-    playlists: Array<string> | null
+    playlists: Array<string> | null,
+    missingRemote: boolean | null
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: Array<any> = [user.id, deviceId];
@@ -115,6 +120,9 @@ export class FileRepository implements iFileDatabase {
     if (playlists !== null) {
       params.push(...playlists);
     }
+    if (missingRemote !== null) {
+      params.push(missingRemote);
+    }
     return params;
   };
 
@@ -123,7 +131,8 @@ export class FileRepository implements iFileDatabase {
     deviceId: string,
     statuses: Array<string> | null,
     synchronized: boolean | null,
-    playlists: Array<string> | null
+    playlists: Array<string> | null,
+    missingRemote: boolean | null
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
@@ -131,7 +140,8 @@ export class FileRepository implements iFileDatabase {
         this.sqlManager.getQuery('getTaggedFilesByUser'),
         statuses,
         synchronized,
-        playlists
+        playlists,
+        missingRemote
       );
       query = this.extendGroupRequest(query);
 
@@ -143,7 +153,8 @@ export class FileRepository implements iFileDatabase {
           deviceId,
           statuses,
           synchronized,
-          playlists
+          playlists,
+          missingRemote
         )
       );
       const { rows } = queryResult;
@@ -160,8 +171,8 @@ export class FileRepository implements iFileDatabase {
     return `${query} GROUP BY f.id, s.id, s.description,
             s.allow_for_secondary_tag_parsing, s.logo_path,
             f.status, f.source_url, fs.is_synchronized,
-            tm.title, tm.artist, tm.album, tm.year,
-            tm.track_number, tm.picture`;
+            upf.missing_from_remote, tm.title, tm.artist,
+            tm.album, tm.year, tm.track_number, tm.picture`;
   };
 
   public insertFile = async (file: FileDTO): Promise<FileDTO> => {

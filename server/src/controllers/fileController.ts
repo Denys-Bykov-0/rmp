@@ -95,6 +95,14 @@ class FileController extends BaseController {
         }
       }
 
+      let missingRemoteParam: boolean | null = null;
+      {
+        const { missingRemote } = request.query;
+        if (missingRemote) {
+          missingRemoteParam = JSON.parse(missingRemote.toString());
+        }
+      }
+
       const fileWorker = this.buildFileWorker();
 
       const result = await fileWorker.getTaggedFilesByUser(
@@ -102,7 +110,8 @@ class FileController extends BaseController {
         deviceIdParam,
         statusesParam,
         synchronizedParam,
-        playlistsParam
+        playlistsParam,
+        missingRemoteParam
       );
       return response.status(200).json(result);
     } catch (error) {
