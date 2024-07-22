@@ -210,11 +210,14 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
   public getUserFile = async (
     userId: string,
     fileId: string,
-  ): Promise<UserFileDTO> => {
+  ): Promise<UserFileDTO | null> => {
     const client = await this.dbPool.connect();
     try {
       const query = this.sqlManager.getQuery('getUserFile');
       const { rows } = await client.query(query, [userId, fileId]);
+      if (rows.length === 0) {
+        return null;
+      }
       return UserFileDTO.fromJSON(rows[0]);
     } catch (error) {
       this.logger.error(
@@ -231,19 +234,26 @@ class FileCoordinatorRepository implements FileCoordinatorDatabase {
     fileId: string,
   ): Promise<UserFileDTO> => {
     const client = await this.dbPool.connect();
+    const timestamp = new Date().toISOString();
     try {
-      const query = `INSERT INTO user_files (user_id, file_id)
-                     VALUES ($1, $2) RETURNING
+      const query = `INSERT INTO user_files (user_id, file_id, added_ts)
+                     VALUES ($1, $2, $3)
+                     RETURNING
                      id AS user_file_id,
                      file_id AS user_file_file_id,
                      user_id AS user_file_user_id,
                      added_ts AS user_file_added_ts`;
       this.logger.debug(`Query: ${query}`);
-      const queryResult = await client.query(query, [userId, fileId]);
+      const queryResult = await client.query(query, [
+        userId,
+        fileId,
+        timestamp,
+      ]);
       if (queryResult.rows.length === 0) {
         throw new Error('Failed to insert user file');
       }
-      return UserFileDTO.fromJSON(queryResult.rows[0]);
+      const { rows } = queryResult;
+      return UserFileDTO.fromJSON(rows[0]);
     } catch (err) {
       this.logger.error(`Error inserting user file: ${err}`);
       throw err;

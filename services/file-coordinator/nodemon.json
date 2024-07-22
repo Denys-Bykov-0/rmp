@@ -3,6 +3,6 @@
   "ignore": ["node_modules", "dist", "src/**/*.spec.ts"],
   "watch": ["src/**/*.ts"],
   "execMap": {
-    "ts": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0:9229 --respawn --transpile-only src/app.ts"
+    "ts": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0:9230 --respawn --transpile-only src/app.ts"
   }
 }

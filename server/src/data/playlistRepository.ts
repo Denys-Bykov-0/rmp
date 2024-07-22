@@ -156,6 +156,9 @@ class PlaylistRepository implements iPlaylistDatabase {
       const query = this.sqlManager.getQuery('getUserPlaylistByUserId');
       dataLogger.debug(query);
       const result = await client.query(query, [userId, playlistId]);
+      if (result.rows.length === 0) {
+        throw new Error('Playlist not found');
+      }
       return UserPlaylistDTO.fromJSON(result.rows[0]);
     } catch (err) {
       dataLogger.error(err);
@@ -169,8 +172,7 @@ class PlaylistRepository implements iPlaylistDatabase {
     url: string,
     sourceId: string,
     addedTs: string,
-    status: Status,
-    synchronizationTs: string
+    status: Status
   ): Promise<PlaylistDTO> => {
     const client = await this.dbPool.connect();
     try {
@@ -181,7 +183,6 @@ class PlaylistRepository implements iPlaylistDatabase {
         sourceId,
         addedTs,
         status,
-        synchronizationTs,
       ]);
       return PlaylistDTO.fromJSON(result.rows[0]);
     } catch (err) {
@@ -223,7 +224,7 @@ class PlaylistRepository implements iPlaylistDatabase {
     try {
       const query = this.sqlManager.getQuery('deleteUserPlaylistsFile');
       dataLogger.debug(query);
-      await client.query(query, [fileId, userId, [playlistIds]]);
+      await client.query(query, [fileId, userId, playlistIds]);
     } catch (err) {
       dataLogger.error(err);
       throw err;
@@ -289,20 +290,6 @@ class PlaylistRepository implements iPlaylistDatabase {
       const result = await client.query(query, [id]);
       const { rows } = result;
       return rows.map((row) => UserPlaylistDTO.fromJSON(row));
-    } catch (err) {
-      dataLogger.error(err);
-      throw err;
-    } finally {
-      client.release();
-    }
-  };
-
-  public deletePlaylists = async (playlistId: string): Promise<void> => {
-    const client = await this.dbPool.connect();
-    try {
-      const query = this.sqlManager.getQuery('deletePlaylists');
-      dataLogger.debug(query);
-      await client.query(query, [playlistId]);
     } catch (err) {
       dataLogger.error(err);
       throw err;

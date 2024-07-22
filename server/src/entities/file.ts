@@ -1,4 +1,3 @@
-import { PlaylistMapping } from './playlistMapping';
 import { Source } from './source';
 
 class ShortTags {
@@ -30,7 +29,7 @@ class File {
   public sourceUrl: string;
   public isSynchronized: boolean;
   public tags: ShortTags | null;
-  public playlists: PlaylistMapping[] | null;
+  public playlists: string[] | null;
 
   constructor(
     id: string,
@@ -39,7 +38,7 @@ class File {
     sourceUrl: string,
     isSynchronized: boolean,
     tags: ShortTags | null,
-    playlists: PlaylistMapping[] | null
+    playlists: string[] | null
   ) {
     this.id = id;
     this.source = source;

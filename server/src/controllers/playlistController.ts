@@ -85,7 +85,8 @@ class PlaylistController extends BaseController {
     next: Express.NextFunction
   ): Promise<void> => {
     try {
-      const { user, playlistId } = req.body;
+      const { user } = req.body;
+      const { playlistId } = req.params;
       const playlistWorker = this.buildPlaylistWorker();
       const result = await playlistWorker.deletePlaylist(user.id, playlistId);
       res.status(200).json(result);

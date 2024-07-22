@@ -10,5 +10,8 @@ export abstract class iFilePlugin {
     userId: string,
     playlistId: string
   ) => void;
-  public abstract downloadFile: (file: FileDTO, routingKey: string) => void;
+  public abstract downloadFile: (
+    file: FileDTO,
+    routingKey: string
+  ) => Promise<void>;
 }

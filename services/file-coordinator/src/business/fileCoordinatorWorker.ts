@@ -193,8 +193,8 @@ class FileCoordinatorWorker {
     playlistId: string,
     url: string,
   ): Promise<void> => {
-    const sourceId = await this.filePlugin.getSource(url);
-    const normalizedUrl = await this.filePlugin.normalizeUrl(url);
+    const sourceId = this.filePlugin.getSource(url);
+    const normalizedUrl = this.filePlugin.normalizeUrl(url);
 
     let file = await this.db.getFileByUrl(normalizedUrl);
 
@@ -226,15 +226,14 @@ class FileCoordinatorWorker {
       if (userPlaylistFile) {
         return;
       }
-
       await this.playlistDb.insertUserPlaylistFile({
         fileId: file!.id,
-        playlistId: userPlaylist.playlistId,
+        playlistId: userPlaylist.id,
         missingFromRemote: false,
       });
-      const userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
+      let userFile = await this.db.getUserFile(userPlaylist.userId, file!.id);
       if (!userFile) {
-        await this.db.insertUserFile(userPlaylist.userId, file!.id);
+        userFile = await this.db.insertUserFile(userPlaylist.userId, file!.id);
       }
       await this.tagDb.insertTagMapping(
         TagMappingDTO.allFromOneSource(userPlaylist.userId, file!.id, sourceId),
@@ -280,16 +279,16 @@ class FileCoordinatorWorker {
           userPlaylist.id,
         );
 
-      const newFiles = currentFiles.filter((upff) =>
-        files.includes(upff.file.sourceUrl),
+      const newFiles = files.filter(
+        (f) => !currentFiles.map((cf) => cf.file.sourceUrl).includes(f),
       );
 
       const removedFiles = currentFiles.filter(
-        (upff) => !files.includes(upff.file.sourceUrl),
+        (cf) => !files.includes(cf.file.sourceUrl),
       );
 
       newFiles.forEach(async (currentFile) => {
-        await this.downloadFile(playlistId, currentFile.file.sourceUrl);
+        await this.downloadFile(playlistId, currentFile);
       });
 
       removedFiles.forEach(async (upff) => {

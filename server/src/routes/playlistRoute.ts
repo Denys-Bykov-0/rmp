@@ -65,7 +65,7 @@ export class PlaylistRoute extends BaseRoute {
     );
 
     this.app.delete(
-      `${playlistURI}`,
+      `${playlistURI}/:playlistId`,
       auth0Middleware(this.config),
       this.config.appDebug
         ? userManagementMiddleware([GENERAL, DEBUG], userWorker, this.config)

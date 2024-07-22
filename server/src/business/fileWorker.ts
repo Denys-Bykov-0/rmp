@@ -107,7 +107,7 @@ export class FileWorker {
 
   public requestFileProcessing = async (file: FileDTO): Promise<void> => {
     const source = await this.sourceDb.getSource(file.source);
-    this.filePlugin.downloadFile(file, source!.description);
+    await this.filePlugin.downloadFile(file, source!.description);
     await this.tagPlugin.tagFile(file, source!.description);
   };
 
@@ -196,6 +196,7 @@ export class FileWorker {
         userFileId: userFile!.id,
         isSynchronized: true,
         wasChanged: false,
+        deviceId: deviceId,
       });
       await this.db.updateSynchronizationRecords(fileSynchronization);
       return;

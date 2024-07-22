@@ -16,7 +16,7 @@ class UserPlaylistDTO {
       json.id.toString(),
       json.user_id,
       json.playlist_id,
-      new Date(json.added_ts)
+      json.added_ts
     );
   }
 }

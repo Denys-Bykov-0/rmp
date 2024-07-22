@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 import { ProcessingError } from '@src/business/processingError';
 import { serverLogger } from '@src/utils/server/logger';
@@ -6,7 +6,8 @@ import { serverLogger } from '@src/utils/server/logger';
 const errorHandlingMiddleware = async (
   error: Error,
   request: Request,
-  response: Response
+  response: Response,
+  next: NextFunction
 ) => {
   if (error instanceof SyntaxError && 'body' in error) {
     return response
@@ -21,10 +22,15 @@ const errorHandlingMiddleware = async (
     });
   }
 
-  serverLogger.error(`Unhandled error: ${error}`);
-  response.status(500).json({
-    message: 'Internal Server Error',
-  });
+  if (error instanceof Error) {
+    serverLogger.error(`Unhandled error: ${error}`);
+    return response.status(500).json({
+      message: error.message,
+      code: -1,
+    });
+  }
+
+  next();
 };
 
 export default errorHandlingMiddleware;

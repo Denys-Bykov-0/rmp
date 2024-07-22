@@ -33,8 +33,7 @@ export abstract class iPlaylistDatabase {
     url: string,
     sourceId: string,
     addedTs: string,
-    status: Status,
-    synchronizationTs: string
+    status: Status
   ): Promise<PlaylistDTO>;
   public abstract insertUserPlaylist(
     userId: string,
@@ -51,5 +50,4 @@ export abstract class iPlaylistDatabase {
     playlistId: string
   ): Promise<UserPlaylistFileDTO[]>;
   public abstract getUserPlaylistById(id: string): Promise<UserPlaylistDTO[]>;
-  public abstract deletePlaylists(playlistId: string): Promise<void>;
 }
