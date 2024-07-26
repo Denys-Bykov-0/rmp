@@ -16,7 +16,8 @@ export abstract class iFileDatabase {
     deviceId: string,
     statuses: Array<string> | null,
     synchronized: boolean | null,
-    playlists: Array<string> | null
+    playlists: Array<string> | null,
+    missingRemoteParam: boolean | null
   ) => Promise<Array<TaggedFileDTO>>;
   public abstract insertFile: (file: FileDTO) => Promise<FileDTO>;
   public abstract insertUserFile: (

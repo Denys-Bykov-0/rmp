@@ -7,6 +7,7 @@ SELECT
   f.status as file_status,
   f.source_url as file_source_url,
   fs.is_synchronized as is_synchronized,
+  upf.missing_from_remote as missing_from_remote,
   (
     SELECT
       title
@@ -53,31 +54,7 @@ SELECT
       and t.file_id = f.id
   ) as tag_track_number,
   tm.picture as tag_picture,
-  ARRAY_AGG(
-    JSON_BUILD_OBJECT(
-      'playlist_id',
-      p.id,
-      'playlist_status',
-      p.status,
-      'playlist_source_url',
-      p.source_url,
-      'source_id',
-      p.source_id,
-      'source_description',
-      (
-        SELECT
-          description
-        FROM
-          sources as s
-        WHERE
-          s.id = p.source_id
-      ),
-      'playlist_synchronization_ts',
-      p.synchronization_ts,
-      'playlist_title',
-      p.title
-    )
-  ) as playlists
+  ARRAY_AGG(p.id) as playlists
 FROM
   files as f
   JOIN sources as s ON f.source = s.id
@@ -85,7 +62,9 @@ FROM
   AND tm.user_id = $1
   INNER JOIN user_files as uf ON f.id = uf.file_id
   LEFT JOIN file_synchronization as fs ON fs.user_file_id = uf.id
+  JOIN user_playlist_files as upf ON upf.file_id = f.id
   JOIN user_playlists as up ON uf.user_id = $1
+  AND up.id = upf.user_playlist_id
   JOIN playlists as p ON up.playlist_id = p.id
   AND fs.device_id = $2
 WHERE

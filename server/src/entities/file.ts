@@ -30,6 +30,7 @@ class File {
   public isSynchronized: boolean;
   public tags: ShortTags | null;
   public playlists: string[] | null;
+  public missingRemote: boolean | null;
 
   constructor(
     id: string,
@@ -38,7 +39,8 @@ class File {
     sourceUrl: string,
     isSynchronized: boolean,
     tags: ShortTags | null,
-    playlists: string[] | null
+    playlists: string[] | null,
+    missingRemote: boolean | null
   ) {
     this.id = id;
     this.source = source;
@@ -47,6 +49,7 @@ class File {
     this.isSynchronized = isSynchronized;
     this.tags = tags;
     this.playlists = playlists;
+    this.missingRemote = missingRemote;
   }
 }
 
