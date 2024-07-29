@@ -180,7 +180,7 @@ export class FileRepository implements iFileDatabase {
             s.allow_for_secondary_tag_parsing, s.logo_path,
             f.status, f.source_url, fs.is_synchronized,
             upf.missing_from_remote, tm.title, tm.artist,
-            tm.album, tm.year, tm.track_number, tm.picture`;
+            tm.album, tm.year, tm.track_number, tm.picture, p.id`;
   };
 
   public extendLimitRequest = (query: string, limit: number): string => {
