@@ -54,7 +54,7 @@ SELECT
       and t.file_id = f.id
   ) as tag_track_number,
   tm.picture as tag_picture,
-  ARRAY_AGG(p.id) as playlists
+  ARRAY_AGG(DISTINCT p.id) as playlists
 FROM
   files as f
   JOIN sources as s ON f.source = s.id
