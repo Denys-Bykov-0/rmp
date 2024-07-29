@@ -136,7 +136,7 @@ export class FileRepository implements iFileDatabase {
     missingRemote: boolean | null,
     limit: number | null,
     offset: number | null,
-    sort: Array<[string, string]> | null
+    sorting: string[] | null
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
@@ -149,7 +149,7 @@ export class FileRepository implements iFileDatabase {
       );
 
       query = this.extendGroupRequest(query);
-      query = sort ? this.extendSortRequest(query, sort) : query;
+      query = sorting ? this.extendSortRequest(query, sorting) : query;
       query = limit ? this.extendLimitRequest(query, limit) : query;
       query = offset ? this.extendOffsetRequest(query, offset) : query;
 
@@ -191,10 +191,7 @@ export class FileRepository implements iFileDatabase {
     return `${query} OFFSET ${offset}`;
   };
 
-  public extendSortRequest = (
-    query: string,
-    sort: Array<[string, string]>
-  ): string => {
+  public extendSortRequest = (query: string, sorting: string[]): string => {
     const fieldAliases: { [key: string]: string } = {
       title: 'tag_title',
       artist: 'tag_artist',
@@ -204,10 +201,10 @@ export class FileRepository implements iFileDatabase {
       picture: 'tag_picture',
       source: 'f.source',
     };
-    const order = sort.map(
-      ([field, direction]) =>
-        `${fieldAliases[field]} ${direction.toUpperCase()}`
-    );
+    const order = sorting.map((field) => {
+      const [fieldName, direction] = field.split(' ');
+      return `${fieldAliases[fieldName]} ${direction}`;
+    });
     return `${query} ORDER BY ${order.join(', ')}`;
   };
 

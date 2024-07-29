@@ -17,10 +17,10 @@ export abstract class iFileDatabase {
     statuses: Array<string> | null,
     synchronized: boolean | null,
     playlists: Array<string> | null,
-    missingRemoteParam: boolean | null,
-    limitParam: number | null,
-    offsetParam: number | null,
-    sortParam: Array<[string, string]> | null
+    missingRemote: boolean | null,
+    limit: number | null,
+    offset: number | null,
+    sorting: string[] | null
   ) => Promise<Array<TaggedFileDTO>>;
   public abstract insertFile: (file: FileDTO) => Promise<FileDTO>;
   public abstract insertUserFile: (

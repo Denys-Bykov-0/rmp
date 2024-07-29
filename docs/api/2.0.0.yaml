@@ -261,7 +261,7 @@ paths:
           in: query
           required: false
           description: Sort order
-          example: 'title,asc,artist,desc'
+          example: '+title,-artist'
           schema:
             type: array
             format: string

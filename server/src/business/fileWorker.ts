@@ -117,10 +117,10 @@ export class FileWorker {
     statuses: Array<string> | null,
     synchronized: boolean | null,
     playlists: Array<string> | null,
-    missingRemoteParam: boolean | null,
-    limitParam: number | null,
-    offsetParam: number | null,
-    sortParam: Array<[string, string]> | null
+    missingRemote: boolean | null,
+    limit: number | null,
+    offset: number | null,
+    sorting: string[] | null
   ): Promise<Array<File>> => {
     const userFiles = await this.db.getTaggedFilesByUser(
       user,
@@ -128,10 +128,10 @@ export class FileWorker {
       statuses,
       synchronized,
       playlists,
-      missingRemoteParam,
-      limitParam,
-      offsetParam,
-      sortParam
+      missingRemote,
+      limit,
+      offset,
+      sorting
     );
 
     const files: Array<File> = userFiles.map((file) => {

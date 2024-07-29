@@ -8,6 +8,7 @@ import { FileSystemRepository } from '@src/data/fileSystemRepository';
 import { FileTagger } from '@src/data/fileTagger';
 import { PlaylistRepository } from '@src/data/playlistRepository';
 import { Config } from '@src/entities/config';
+import { User } from '@src/entities/user';
 import { PluginManager } from '@src/pluginManager';
 import { SQLManager } from '@src/sqlManager';
 
@@ -58,100 +59,68 @@ class FileController extends BaseController {
     next: Express.NextFunction
   ) => {
     try {
-      const { user } = request.body;
-      let deviceIdParam: string;
-      {
-        const { deviceId } = request.query;
-        if (!deviceId) {
-          const opts = {
-            message: 'Device ID is required',
-          };
-          throw new ProcessingError(opts);
-        }
-        deviceIdParam = deviceId!.toString();
+      interface QueryParams {
+        deviceId?: string;
+        statuses?: string;
+        synchronized?: string;
+        playlists?: string;
+        missingRemote?: string;
+        limit?: string;
+        offset?: string;
+        sort?: string;
       }
 
-      let statusesParam: Array<string> | null = null;
-      {
-        const { statuses } = request.query;
-        if (statuses) {
-          statusesParam = statuses.toString().split(',');
-        }
+      const { user }: { user: User } = request.body;
+
+      const {
+        deviceId,
+        statuses,
+        synchronized,
+        playlists,
+        missingRemote,
+        limit,
+        offset,
+        sort,
+      }: QueryParams = request.query;
+
+      if (!deviceId) {
+        const opts = {
+          message: 'Device ID is required',
+        };
+        throw new ProcessingError(opts);
       }
 
-      let synchronizedParam: boolean | null = null;
-      {
-        const { synchronized } = request.query;
-        if (synchronized) {
-          synchronizedParam = JSON.parse(synchronized.toString());
-        }
-      }
+      const parseQueryParam = <T>(
+        param: string | undefined,
+        parser: (val: string) => T
+      ): T | null => {
+        return param ? parser(param) : null;
+      };
 
-      let playlistsParam: Array<string> | null = null;
-      {
-        const { playlists } = request.query;
-        if (playlists) {
-          playlistsParam = playlists.toString().split(',');
-        }
-      }
-
-      let missingRemoteParam: boolean | null = null;
-      {
-        const { missingRemote } = request.query;
-        if (missingRemote) {
-          missingRemoteParam = JSON.parse(missingRemote.toString());
-        }
-      }
-
-      let limitRaram: number | null = null;
-      {
-        const { limit } = request.query;
-        if (limit) {
-          limitRaram = parseInt(limit.toString());
-        }
-      }
-
-      let offsetParam: number | null = null;
-      {
-        const { offset } = request.query;
-        if (offset) {
-          offsetParam = parseInt(offset.toString());
-        }
-      }
-
-      let sortParam: Array<[string, string]> | null = null;
-      {
-        const { sort } = request.query;
-        if (sort) {
-          const sortArray = sort.toString().split(',');
-          for (let i = 0; i < sortArray.length; i += 2) {
-            if (i + 1 >= sortArray.length) {
-              const opts = {
-                message: 'Invalid sort parameter',
-              };
-              throw new ProcessingError(opts);
-            }
-            if (!sortParam) {
-              sortParam = [];
-            }
-            sortParam.push([sortArray[i], sortArray[i + 1]]);
+      const parserSortParams = (str: string): string[] =>
+        str.split(',').map((sortParam) => {
+          if (sortParam.startsWith('+')) {
+            return `${sortParam.slice(1)} ASC`;
+          } else if (sortParam.startsWith('-')) {
+            return `${sortParam.slice(1)} DESC`;
           }
-        }
-      }
+          return `${sortParam} ASC`;
+        });
 
       const fileWorker = this.buildFileWorker();
 
       const result = await fileWorker.getTaggedFilesByUser(
         user,
-        deviceIdParam,
-        statusesParam,
-        synchronizedParam,
-        playlistsParam,
-        missingRemoteParam,
-        limitRaram,
-        offsetParam,
-        sortParam
+        deviceId.toString(),
+        parseQueryParam(statuses, (str) => str.split(',')),
+        parseQueryParam(synchronized, JSON.parse),
+        parseQueryParam(playlists, (str) => str.split(',')),
+        parseQueryParam(missingRemote, JSON.parse),
+        parseQueryParam(limit, parseInt),
+        parseQueryParam(offset, parseInt),
+        parseQueryParam(sort, parserSortParams)
       );
+
       return response.status(200).json(result);
     } catch (error) {
       next(error);
