@@ -241,6 +241,30 @@ paths:
           example: true
           schema:
             type: boolean
+        - name: limit
+          in: query
+          required: false
+          description: Limit of the files to return
+          example: 10
+          schema:
+            type: integer
+            format: int32
+        - name: offset
+          in: query
+          required: false
+          description: Offset of the files to return
+          example: 0
+          schema:
+            type: integer
+            format: int32
+        - name: sort
+          in: query
+          required: false
+          description: Sort order
+          example: 'title,asc,artist,desc'
+          schema:
+            type: array
+            format: string
       responses:
         '200':
           description: successful operation

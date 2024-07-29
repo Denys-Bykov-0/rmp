@@ -103,6 +103,42 @@ class FileController extends BaseController {
         }
       }
 
+      let limitRaram: number | null = null;
+      {
+        const { limit } = request.query;
+        if (limit) {
+          limitRaram = parseInt(limit.toString());
+        }
+      }
+
+      let offsetParam: number | null = null;
+      {
+        const { offset } = request.query;
+        if (offset) {
+          offsetParam = parseInt(offset.toString());
+        }
+      }
+
+      let sortParam: Array<[string, string]> | null = null;
+      {
+        const { sort } = request.query;
+        if (sort) {
+          const sortArray = sort.toString().split(',');
+          for (let i = 0; i < sortArray.length; i += 2) {
+            if (i + 1 >= sortArray.length) {
+              const opts = {
+                message: 'Invalid sort parameter',
+              };
+              throw new ProcessingError(opts);
+            }
+            if (!sortParam) {
+              sortParam = [];
+            }
+            sortParam.push([sortArray[i], sortArray[i + 1]]);
+          }
+        }
+      }
+
       const fileWorker = this.buildFileWorker();
 
       const result = await fileWorker.getTaggedFilesByUser(
@@ -111,7 +147,10 @@ class FileController extends BaseController {
         statusesParam,
         synchronizedParam,
         playlistsParam,
-        missingRemoteParam
+        missingRemoteParam,
+        limitRaram,
+        offsetParam,
+        sortParam
       );
       return response.status(200).json(result);
     } catch (error) {

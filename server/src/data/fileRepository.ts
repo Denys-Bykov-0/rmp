@@ -123,6 +123,7 @@ export class FileRepository implements iFileDatabase {
     if (missingRemote !== null) {
       params.push(missingRemote);
     }
+
     return params;
   };
 
@@ -132,7 +133,10 @@ export class FileRepository implements iFileDatabase {
     statuses: Array<string> | null,
     synchronized: boolean | null,
     playlists: Array<string> | null,
-    missingRemote: boolean | null
+    missingRemote: boolean | null,
+    limit: number | null,
+    offset: number | null,
+    sort: Array<[string, string]> | null
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
@@ -143,7 +147,11 @@ export class FileRepository implements iFileDatabase {
         playlists,
         missingRemote
       );
+
       query = this.extendGroupRequest(query);
+      query = sort ? this.extendSortRequest(query, sort) : query;
+      query = limit ? this.extendLimitRequest(query, limit) : query;
+      query = offset ? this.extendOffsetRequest(query, offset) : query;
 
       dataLogger.debug(query);
       const queryResult = await client.query(
@@ -173,6 +181,34 @@ export class FileRepository implements iFileDatabase {
             f.status, f.source_url, fs.is_synchronized,
             upf.missing_from_remote, tm.title, tm.artist,
             tm.album, tm.year, tm.track_number, tm.picture`;
+  };
+
+  public extendLimitRequest = (query: string, limit: number): string => {
+    return `${query} LIMIT ${limit}`;
+  };
+
+  public extendOffsetRequest = (query: string, offset: number): string => {
+    return `${query} OFFSET ${offset}`;
+  };
+
+  public extendSortRequest = (
+    query: string,
+    sort: Array<[string, string]>
+  ): string => {
+    const fieldAliases: { [key: string]: string } = {
+      title: 'tag_title',
+      artist: 'tag_artist',
+      album: 'tag_album',
+      year: 'tag_year',
+      track_number: 'tag_track_number',
+      picture: 'tag_picture',
+      source: 'f.source',
+    };
+    const order = sort.map(
+      ([field, direction]) =>
+        `${fieldAliases[field]} ${direction.toUpperCase()}`
+    );
+    return `${query} ORDER BY ${order.join(', ')}`;
   };
 
   public insertFile = async (file: FileDTO): Promise<FileDTO> => {
