@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
-import express, { Application } from 'express';
+import express, { Express } from 'express';
 import fs from 'fs';
-import http2 from 'http2';
-import http2Express from 'http2-express-bridge';
+import https from 'https';
 import pg from 'pg';
 
 import { Config } from '@src/entities/config';
@@ -27,7 +26,7 @@ import { dataLogger, serverLogger } from '@src/utils/server/logger';
 import { parseJSONConfig } from '@src/utils/server/parseJSONConfig';
 
 export class App {
-  private readonly app: Application;
+  private readonly app: Express;
   private routes: Array<BaseRoute> = [];
   private config: Config;
   private dbPool: pg.Pool;
@@ -35,7 +34,7 @@ export class App {
   private pluginManager: PluginManager;
 
   constructor() {
-    this.app = http2Express(express);
+    this.app = express();
     const env = dotenv.config({ path: 'config/.env' }).parsed || {};
     const configJson = parseJSONConfig(
       JSON.parse(fs.readFileSync('config/config.json', 'utf-8'))
@@ -50,7 +49,7 @@ export class App {
     );
   }
 
-  public getApp(): Application {
+  public getApp(): Express {
     return this.app;
   }
 
@@ -149,8 +148,8 @@ export class App {
         key: fs.readFileSync(this.config.appHttpsKey),
         cert: fs.readFileSync(this.config.appHttpsCert),
       };
-      http2
-        .createSecureServer(httpsOptions, this.app)
+      https
+        .createServer(httpsOptions, this.app)
         .listen(this.config.appPort, this.config.appHost, () => {
           this.routes.forEach((route) => {
             serverLogger.info(`Routes configured for ${route.getName()}`);
