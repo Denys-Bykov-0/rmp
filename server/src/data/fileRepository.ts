@@ -6,7 +6,7 @@ import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
 import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { UserDTO } from '@src/dtos/userDTO';
 import { UserFileDTO } from '@src/dtos/userFileDTO';
-import { SortOrder, iFileDatabase } from '@src/interfaces/iFileDatabase';
+import { iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { SQLManager } from '@src/sqlManager';
 import { dataLogger } from '@src/utils/server/logger';
 
@@ -136,7 +136,7 @@ export class FileRepository implements iFileDatabase {
     missingRemote: boolean | null,
     limit: number | null,
     offset: number | null,
-    sorting: Map<string, SortOrder> | null
+    sorting: Map<string, string> | null
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
@@ -193,7 +193,7 @@ export class FileRepository implements iFileDatabase {
 
   public extendSortRequest = (
     query: string,
-    sorting: Map<string, SortOrder>
+    sorting: Map<string, string>
   ): string => {
     const fieldAliases: { [key: string]: string } = {
       title: 'tag_title',
