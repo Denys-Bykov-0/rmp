@@ -9,6 +9,7 @@ import { FileTagger } from '@src/data/fileTagger';
 import { PlaylistRepository } from '@src/data/playlistRepository';
 import { Config } from '@src/entities/config';
 import { User } from '@src/entities/user';
+import { SortOrder } from '@src/interfaces/iFileDatabase';
 import { PluginManager } from '@src/pluginManager';
 import { SQLManager } from '@src/sqlManager';
 
@@ -97,15 +98,21 @@ class FileController extends BaseController {
         return param ? parser(param) : null;
       };
 
-      const parserSortParams = (str: string): string[] =>
-        str.split(',').map((sortParam) => {
+      const parserSortParams = (str: string): Map<string, SortOrder> => {
+        const sortMap = new Map<string, SortOrder>();
+
+        str.split(',').forEach((sortParam) => {
           if (sortParam.startsWith('+')) {
-            return `${sortParam.slice(1)} ASC`;
+            sortMap.set(sortParam.slice(1), SortOrder.ASC);
           } else if (sortParam.startsWith('-')) {
-            return `${sortParam.slice(1)} DESC`;
+            sortMap.set(sortParam.slice(1), SortOrder.DESC);
+          } else {
+            sortMap.set(sortParam, SortOrder.ASC);
           }
-          return `${sortParam} ASC`;
         });
+
+        return sortMap;
+      };
 
       const fileWorker = this.buildFileWorker();
 

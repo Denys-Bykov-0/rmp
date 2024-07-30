@@ -13,7 +13,7 @@ import { File } from '@src/entities/file';
 import { FileData } from '@src/entities/fileData';
 import { GetFileResponse } from '@src/entities/getFileResponse';
 import { User } from '@src/entities/user';
-import { iFileDatabase } from '@src/interfaces/iFileDatabase';
+import { SortOrder, iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { iFilePlugin } from '@src/interfaces/iFilePlugin';
 import { FileType, iFileSystem } from '@src/interfaces/iFileSystem';
 import { iFileTagger } from '@src/interfaces/iFileTagger';
@@ -120,7 +120,7 @@ export class FileWorker {
     missingRemote: boolean | null,
     limit: number | null,
     offset: number | null,
-    sorting: string[] | null
+    sorting: Map<string, SortOrder> | null
   ): Promise<Array<File>> => {
     const userFiles = await this.db.getTaggedFilesByUser(
       user,

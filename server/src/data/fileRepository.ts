@@ -6,7 +6,7 @@ import { TaggedFileDTO } from '@src/dtos/taggedFileDTO';
 import { UpdateFileSynchronizationDTO } from '@src/dtos/updateFileSynchronizationDTO';
 import { UserDTO } from '@src/dtos/userDTO';
 import { UserFileDTO } from '@src/dtos/userFileDTO';
-import { iFileDatabase } from '@src/interfaces/iFileDatabase';
+import { SortOrder, iFileDatabase } from '@src/interfaces/iFileDatabase';
 import { SQLManager } from '@src/sqlManager';
 import { dataLogger } from '@src/utils/server/logger';
 
@@ -136,7 +136,7 @@ export class FileRepository implements iFileDatabase {
     missingRemote: boolean | null,
     limit: number | null,
     offset: number | null,
-    sorting: string[] | null
+    sorting: Map<string, SortOrder> | null
   ): Promise<Array<TaggedFileDTO>> => {
     const client = await this.dbPool.connect();
     try {
@@ -191,7 +191,10 @@ export class FileRepository implements iFileDatabase {
     return `${query} OFFSET ${offset}`;
   };
 
-  public extendSortRequest = (query: string, sorting: string[]): string => {
+  public extendSortRequest = (
+    query: string,
+    sorting: Map<string, SortOrder>
+  ): string => {
     const fieldAliases: { [key: string]: string } = {
       title: 'tag_title',
       artist: 'tag_artist',
@@ -201,9 +204,9 @@ export class FileRepository implements iFileDatabase {
       picture: 'tag_picture',
       source: 'f.source',
     };
-    const order = sorting.map((field) => {
-      const [fieldName, direction] = field.split(' ');
-      return `${fieldAliases[fieldName]} ${direction}`;
+    const order: string[] = [];
+    sorting.forEach((value, key) => {
+      order.push(`${fieldAliases[key]} ${value}`);
     });
     return `${query} ORDER BY ${order.join(', ')}`;
   };

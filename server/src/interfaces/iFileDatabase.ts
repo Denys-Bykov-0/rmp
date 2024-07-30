@@ -20,7 +20,7 @@ export abstract class iFileDatabase {
     missingRemote: boolean | null,
     limit: number | null,
     offset: number | null,
-    sorting: string[] | null
+    sorting: Map<string, SortOrder> | null
   ) => Promise<Array<TaggedFileDTO>>;
   public abstract insertFile: (file: FileDTO) => Promise<FileDTO>;
   public abstract insertUserFile: (
@@ -74,4 +74,9 @@ export abstract class iFileDatabase {
     fileId: string
   ) => Promise<Array<UserFileDTO>>;
   public abstract deleteFileById: (fileId: string) => Promise<void>;
+}
+
+export enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC',
 }
