@@ -117,15 +117,36 @@ export class FileWorker {
     statuses: Array<string> | null,
     synchronized: boolean | null,
     playlists: Array<string> | null,
-    missingRemoteParam: boolean | null
+    missingRemote: boolean | null,
+    limit: number | null,
+    offset: number | null,
+    sorting: string[] | null
   ): Promise<Array<File>> => {
+    const parserSortParams = (str: string[]): Map<string, string> => {
+      const sortMap = new Map<string, string>();
+
+      str.forEach((sortParam) => {
+        if (sortParam.startsWith('+')) {
+          sortMap.set(sortParam.slice(1), SortOrder.ASC);
+        } else if (sortParam.startsWith('-')) {
+          sortMap.set(sortParam.slice(1), SortOrder.DESC);
+        } else {
+          sortMap.set(sortParam, SortOrder.ASC);
+        }
+      });
+
+      return sortMap;
+    };
     const userFiles = await this.db.getTaggedFilesByUser(
       user,
       deviceId,
       statuses,
       synchronized,
       playlists,
-      missingRemoteParam
+      missingRemote,
+      limit,
+      offset,
+      parserSortParams(sorting!)
     );
 
     const files: Array<File> = userFiles.map((file) => {
@@ -299,4 +320,9 @@ export class FileWorker {
     await this.db.updateSynchronizationRecords(fileSynchronization);
     return;
   };
+}
+
+export enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC',
 }

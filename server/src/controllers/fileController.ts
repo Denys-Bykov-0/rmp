@@ -8,6 +8,7 @@ import { FileSystemRepository } from '@src/data/fileSystemRepository';
 import { FileTagger } from '@src/data/fileTagger';
 import { PlaylistRepository } from '@src/data/playlistRepository';
 import { Config } from '@src/entities/config';
+import { User } from '@src/entities/user';
 import { PluginManager } from '@src/pluginManager';
 import { SQLManager } from '@src/sqlManager';
 
@@ -58,61 +59,58 @@ class FileController extends BaseController {
     next: Express.NextFunction
   ) => {
     try {
-      const { user } = request.body;
-      let deviceIdParam: string;
-      {
-        const { deviceId } = request.query;
-        if (!deviceId) {
-          const opts = {
-            message: 'Device ID is required',
-          };
-          throw new ProcessingError(opts);
-        }
-        deviceIdParam = deviceId!.toString();
+      interface QueryParams {
+        deviceId?: string;
+        statuses?: string;
+        synchronized?: string;
+        playlists?: string;
+        missingRemote?: string;
+        limit?: string;
+        offset?: string;
+        sort?: string;
       }
 
-      let statusesParam: Array<string> | null = null;
-      {
-        const { statuses } = request.query;
-        if (statuses) {
-          statusesParam = statuses.toString().split(',');
-        }
+      const { user }: { user: User } = request.body;
+
+      const {
+        deviceId,
+        statuses,
+        synchronized,
+        playlists,
+        missingRemote,
+        limit,
+        offset,
+        sort,
+      }: QueryParams = request.query;
+
+      if (!deviceId) {
+        const opts = {
+          message: 'Device ID is required',
+        };
+        throw new ProcessingError(opts);
       }
 
-      let synchronizedParam: boolean | null = null;
-      {
-        const { synchronized } = request.query;
-        if (synchronized) {
-          synchronizedParam = JSON.parse(synchronized.toString());
-        }
-      }
-
-      let playlistsParam: Array<string> | null = null;
-      {
-        const { playlists } = request.query;
-        if (playlists) {
-          playlistsParam = playlists.toString().split(',');
-        }
-      }
-
-      let missingRemoteParam: boolean | null = null;
-      {
-        const { missingRemote } = request.query;
-        if (missingRemote) {
-          missingRemoteParam = JSON.parse(missingRemote.toString());
-        }
-      }
+      const parseQueryParam = <T>(
+        param: string | undefined,
+        parser: (val: string) => T
+      ): T | null => {
+        return param ? parser(param) : null;
+      };
 
       const fileWorker = this.buildFileWorker();
 
       const result = await fileWorker.getTaggedFilesByUser(
         user,
-        deviceIdParam,
-        statusesParam,
-        synchronizedParam,
-        playlistsParam,
-        missingRemoteParam
+        deviceId.toString(),
+        parseQueryParam(statuses, (str) => str.split(',')),
+        parseQueryParam(synchronized, JSON.parse),
+        parseQueryParam(playlists, (str) => str.split(',')),
+        parseQueryParam(missingRemote, JSON.parse),
+        parseQueryParam(limit, parseInt),
+        parseQueryParam(offset, parseInt),
+        parseQueryParam(sort, (str) => str.split(','))
       );
+
       return response.status(200).json(result);
     } catch (error) {
       next(error);
