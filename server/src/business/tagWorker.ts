@@ -5,6 +5,7 @@ import { v4 as randomUUIDV4 } from 'uuid';
 
 import { Status } from '@src/dtos/statusDTO';
 import { TagDTO } from '@src/dtos/tagDTO';
+import { Config } from '@src/entities/config';
 import { ShortTags } from '@src/entities/file';
 import { Tag } from '@src/entities/tag';
 import { iFileDatabase } from '@src/interfaces/iFileDatabase';
@@ -21,17 +22,20 @@ export class TagWorker {
   private tagPlugin: iTagPlugin;
   private fileDb: iFileDatabase;
   private sourceDb: iSourceDatabase;
+  private config: Config;
 
   constructor(
     db: iTagDatabase,
     fileDb: iFileDatabase,
     sourceDb: iSourceDatabase,
-    tagPlugin: iTagPlugin
+    tagPlugin: iTagPlugin,
+    config: Config
   ) {
     this.db = db;
     this.fileDb = fileDb;
     this.sourceDb = sourceDb;
     this.tagPlugin = tagPlugin;
+    this.config = config;
     dataLogger.trace('TagWorker initialized');
   }
 
@@ -63,7 +67,7 @@ export class TagWorker {
       });
     }
 
-    return tag.picturePath;
+    return path.join(this.config.appPathStorage, 'img', tag.picturePath);
   };
 
   public parseTags = async (fileId: string): Promise<Array<Tag>> => {

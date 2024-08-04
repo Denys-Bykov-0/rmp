@@ -27,7 +27,8 @@ class TagController extends BaseController {
       new TagRepository(this.dbPool, this.sqlManager),
       new FileRepository(this.dbPool, this.sqlManager),
       new SourceRepository(this.dbPool, this.sqlManager),
-      this.pluginManager!.getTagPlugin()
+      this.pluginManager!.getTagPlugin(),
+      this.config
     );
   };
 
